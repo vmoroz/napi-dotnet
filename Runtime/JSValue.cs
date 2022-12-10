@@ -10,6 +10,14 @@ public struct JSValue
 
     public JSValueScope Scope { get; }
 
+    // Creates new Object
+    public JSValue()
+    {
+        JSValue value = JSNativeApi.CreateObject();
+        Scope = value.Scope;
+        _handle = value._handle;
+    }
+
     public JSValue(JSValueScope scope, napi_value handle)
     {
         Contract.Requires(handle.Handle != nint.Zero, "handle must be not null");
