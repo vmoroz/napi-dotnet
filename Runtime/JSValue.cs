@@ -42,7 +42,9 @@ public struct JSValue
     public static JSValue False => JSNativeApi.GetBoolean(false);
     public static JSValue GetBoolean(bool value) => JSNativeApi.GetBoolean(value);
 
-    public PropertyEnumerable Properties => new PropertyEnumerable(this);
+    public EnumerableProperties Properties => new EnumerableProperties(this);
+
+    public EnumerableItems Items => new EnumerableItems(this);
 
     public static implicit operator JSValue(bool value) => JSNativeApi.GetBoolean(value);
     public static implicit operator JSValue(sbyte value) => JSNativeApi.CreateNumber(value);
@@ -97,11 +99,11 @@ public struct JSValue
     public static implicit operator JSValue(napi_value handle) => new(handle);
     public static implicit operator JSValue?(napi_value handle) => handle.Handle != nint.Zero ? new JSValue(handle) : (JSValue?)null;
 
-    public struct PropertyEnumerable : IEnumerable<(JSValue name, JSValue value)>, IEnumerable
+    public struct EnumerableProperties : IEnumerable<(JSValue name, JSValue value)>, IEnumerable
     {
         private JSValue _value;
 
-        internal PropertyEnumerable(JSValue value)
+        internal EnumerableProperties(JSValue value)
         {
             _value = value;
         }
@@ -163,6 +165,87 @@ public struct JSValue
         }
 
         public (JSValue name, JSValue value) Current
+            => _current ?? throw new InvalidOperationException("Unexpected enumerator state");
+
+        object? IEnumerator.Current
+        {
+            get
+            {
+                if (_index == 0 || _index == _count + 1)
+                {
+                    throw new InvalidOperationException("Invalid enumerator state");
+                }
+                return Current;
+            }
+        }
+
+        void IEnumerator.Reset()
+        {
+            _index = 0;
+            _current = default;
+        }
+    }
+
+    public struct EnumerableItems : IEnumerable<JSValue>, IEnumerable
+    {
+        private JSValue _value;
+
+        internal EnumerableItems(JSValue value)
+        {
+            _value = value;
+        }
+
+        public ItemEnumerator GetEnumerator()
+            => new ItemEnumerator(_value);
+
+        IEnumerator<JSValue> IEnumerable<JSValue>.GetEnumerator()
+            => new ItemEnumerator(_value);
+
+        IEnumerator IEnumerable.GetEnumerator()
+            => new ItemEnumerator(_value);
+    }
+
+    public struct ItemEnumerator : IEnumerator<JSValue>, IEnumerator
+    {
+        private readonly JSValue _value;
+        private readonly int _count;
+        private int _index;
+        private JSValue? _current;
+
+        internal ItemEnumerator(JSValue value)
+        {
+            _value = value;
+            if (value.IsArray())
+            {
+                _count = value.GetArrayLength();
+            }
+            else
+            {
+                _count = 0;
+            }
+            _index = 0;
+            _current = default;
+        }
+
+        public void Dispose()
+        {
+        }
+
+        public bool MoveNext()
+        {
+            if (_index < _count)
+            {
+                _current = _value.GetElement(_index);
+                _index++;
+                return true;
+            }
+
+            _index = _count + 1;
+            _current = default;
+            return false;
+        }
+
+        public JSValue Current
             => _current ?? throw new InvalidOperationException("Unexpected enumerator state");
 
         object? IEnumerator.Current
