@@ -126,7 +126,7 @@ public partial class TestObject
         JSValue obj = args[0];
         long sum = 0;
 
-        foreach ((JSValue _, JSValue value) in obj)
+        foreach ((JSValue _, JSValue value) in obj.Properties)
         {
             sum += (long)value;
         }
@@ -138,7 +138,7 @@ public partial class TestObject
     {
         JSValue obj = args[0];
 
-        foreach ((JSValue name, JSValue value) in obj)
+        foreach ((JSValue name, JSValue value) in obj.Properties)
         {
             obj[name] = (long)value + 1;
         }

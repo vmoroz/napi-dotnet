@@ -6,7 +6,7 @@ using static NodeApi.JSNativeApi.Interop;
 
 namespace NodeApi;
 
-public struct JSValue : IEnumerable<(JSValue name, JSValue value)>
+public struct JSValue
 {
     private napi_value _handle;
 
@@ -42,18 +42,7 @@ public struct JSValue : IEnumerable<(JSValue name, JSValue value)>
     public static JSValue False => JSNativeApi.GetBoolean(false);
     public static JSValue GetBoolean(bool value) => JSNativeApi.GetBoolean(value);
 
-    public IEnumerator<(JSValue name, JSValue value)> GetEnumerator()
-    {
-        JSValue names = JSNativeApi.GetPropertyNames(this);
-        int size = JSNativeApi.GetArrayLength(names);
-        for (int i = 0; i < size; ++i)
-        {
-            JSValue name = names[i];
-            yield return (name, this[name]);
-        }
-    }
-
-    IEnumerator IEnumerable.GetEnumerator() => throw new NotImplementedException();
+    public PropertyEnumerable Properties => new PropertyEnumerable(this);
 
     public static implicit operator JSValue(bool value) => JSNativeApi.GetBoolean(value);
     public static implicit operator JSValue(sbyte value) => JSNativeApi.CreateNumber(value);
@@ -107,4 +96,91 @@ public struct JSValue : IEnumerable<(JSValue name, JSValue value)>
 
     public static implicit operator JSValue(napi_value handle) => new(handle);
     public static implicit operator JSValue?(napi_value handle) => handle.Handle != nint.Zero ? new JSValue(handle) : (JSValue?)null;
+
+    public struct PropertyEnumerable : IEnumerable<(JSValue name, JSValue value)>, IEnumerable
+    {
+        private JSValue _value;
+
+        internal PropertyEnumerable(JSValue value)
+        {
+            _value = value;
+        }
+
+        public PropertyEnumerator GetEnumerator()
+            => new PropertyEnumerator(_value);
+
+        IEnumerator<(JSValue name, JSValue value)> IEnumerable<(JSValue name, JSValue value)>.GetEnumerator()
+            => new PropertyEnumerator(_value);
+
+        IEnumerator IEnumerable.GetEnumerator()
+            => new PropertyEnumerator(_value);
+    }
+
+    public struct PropertyEnumerator : IEnumerator<(JSValue name, JSValue value)>, IEnumerator
+    {
+        private readonly JSValue _value;
+        private readonly JSValue _names;
+        private readonly int _count;
+        private int _index;
+        private (JSValue name, JSValue value)? _current;
+
+        internal PropertyEnumerator(JSValue value)
+        {
+            _value = value;
+            JSValueType valueType = value.TypeOf();
+            if (valueType == JSValueType.Object || valueType == JSValueType.Function)
+            {
+                JSValue names = value.GetPropertyNames();
+                _names = names;
+                _count = names.GetArrayLength();
+            }
+            else
+            {
+                _names = Undefined;
+                _count = 0;
+            }
+            _index = 0;
+            _current = default;
+        }
+
+        public void Dispose()
+        {
+        }
+
+        public bool MoveNext()
+        {
+            if (_index < _count)
+            {
+                JSValue name = _names.GetElement(_index);
+                _current = (name, _value.GetProperty(name));
+                _index++;
+                return true;
+            }
+
+            _index = _count + 1;
+            _current = default;
+            return false;
+        }
+
+        public (JSValue name, JSValue value) Current
+            => _current ?? throw new InvalidOperationException("Unexpected enumerator state");
+
+        object? IEnumerator.Current
+        {
+            get
+            {
+                if (_index == 0 || _index == _count + 1)
+                {
+                    throw new InvalidOperationException("Invalid enumerator state");
+                }
+                return Current;
+            }
+        }
+
+        void IEnumerator.Reset()
+        {
+            _index = 0;
+            _current = default;
+        }
+    }
 }
