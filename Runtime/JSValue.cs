@@ -97,7 +97,7 @@ public struct JSValue
     public static explicit operator napi_value(JSValue? value) => value != null ? value.Value.GetCheckedHandle() : new napi_value(nint.Zero);
 
     public static implicit operator JSValue(napi_value handle) => new(handle);
-    public static implicit operator JSValue?(napi_value handle) => handle.Handle != nint.Zero ? new JSValue(handle) : (JSValue?)null;
+    public static implicit operator JSValue?(napi_value handle) => handle.Handle != nint.Zero ? new JSValue?(new JSValue(handle)) : null;
 
     public struct EnumerableProperties : IEnumerable<(JSValue name, JSValue value)>, IEnumerable
     {

@@ -1,63 +1,65 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using static NodeApi.JSNativeApi.Interop;
 
 namespace NodeApi;
 
 public interface IJSUnknown<TSelf>
-    where TSelf : IJSUnknown<TSelf>
+    where TSelf : struct, IJSUnknown<TSelf>
 {
     static abstract TSelf FromJSValue(JSValue value);
     static abstract JSValue ToJSValue(TSelf self);
 }
 
 public interface IJSBoolean<TSelf> : IJSUnknown<TSelf>
-    where TSelf : IJSBoolean<TSelf>
+    where TSelf : struct, IJSBoolean<TSelf>
 {
 }
 
 public interface IJSNumber<TSelf> : IJSUnknown<TSelf>
-    where TSelf : IJSNumber<TSelf>
+    where TSelf : struct, IJSNumber<TSelf>
 {
 }
 
 public interface IJSName<TSelf> : IJSUnknown<TSelf>
-    where TSelf : IJSName<TSelf>
+    where TSelf : struct, IJSName<TSelf>
 {
 }
 
 public interface IJSString<TSelf> : IJSName<TSelf>
-    where TSelf : IJSString<TSelf>
+    where TSelf : struct, IJSString<TSelf>
 {
 }
 
 public interface IJSSymbol<TSelf> : IJSName<TSelf>
-    where TSelf : IJSSymbol<TSelf>
+    where TSelf : struct, IJSSymbol<TSelf>
 {
 }
 
 public interface IJSObject<TSelf> : IJSUnknown<TSelf>
-    where TSelf : IJSObject<TSelf>
+    where TSelf : struct, IJSObject<TSelf>
 {
 }
 
 public interface IJSExternal<TSelf> : IJSUnknown<TSelf>
-    where TSelf : IJSExternal<TSelf>
+    where TSelf : struct, IJSExternal<TSelf>
 {
 }
 
 public interface IJSBigInt<TSelf> : IJSUnknown<TSelf>
-    where TSelf : IJSBigInt<TSelf>
+    where TSelf : struct, IJSBigInt<TSelf>
 {
 }
 
 public interface IJSFunction<TSelf> : IJSObject<TSelf>
-    where TSelf : IJSFunction<TSelf>
+    where TSelf : struct, IJSFunction<TSelf>
 {
 }
 
 public interface IJSArray<TSelf> : IJSObject<TSelf>
-    where TSelf : IJSArray<TSelf>
+    where TSelf : struct, IJSArray<TSelf>
 {
 }
 
@@ -83,7 +85,7 @@ public struct JSBoolean : IJSBoolean<JSBoolean>
     public static implicit operator JSUnknown(JSBoolean value) => JSUnknown.FromJSValue(value._value);
 
     public static explicit operator bool(JSBoolean value) => value._value.GetValueBool();
-    public static implicit operator JSBoolean(bool value) => new (value);
+    public static implicit operator JSBoolean(bool value) => new(value);
 }
 
 public struct JSNumber : IJSNumber<JSNumber>
@@ -106,16 +108,16 @@ public struct JSNumber : IJSNumber<JSNumber>
 
     public static implicit operator JSUnknown(JSNumber value) => JSUnknown.FromJSValue(value._value);
 
-    public static implicit operator JSNumber(sbyte value) => new (value);
-    public static implicit operator JSNumber(byte value) => new (value);
-    public static implicit operator JSNumber(short value) => new (value);
-    public static implicit operator JSNumber(ushort value) => new (value);
-    public static implicit operator JSNumber(int value) => new (value);
-    public static implicit operator JSNumber(uint value) => new (value);
-    public static implicit operator JSNumber(long value) => new (value);
-    public static implicit operator JSNumber(ulong value) => new (value);
-    public static implicit operator JSNumber(float value) => new (value);
-    public static implicit operator JSNumber(double value) => new (value);
+    public static implicit operator JSNumber(sbyte value) => new(value);
+    public static implicit operator JSNumber(byte value) => new(value);
+    public static implicit operator JSNumber(short value) => new(value);
+    public static implicit operator JSNumber(ushort value) => new(value);
+    public static implicit operator JSNumber(int value) => new(value);
+    public static implicit operator JSNumber(uint value) => new(value);
+    public static implicit operator JSNumber(long value) => new(value);
+    public static implicit operator JSNumber(ulong value) => new(value);
+    public static implicit operator JSNumber(float value) => new(value);
+    public static implicit operator JSNumber(double value) => new(value);
 
     public static explicit operator sbyte(JSNumber value) => (sbyte)value._value.GetValueInt32();
     public static explicit operator byte(JSNumber value) => (byte)value._value.GetValueUInt32();
@@ -207,6 +209,9 @@ public struct JSObject : IJSObject<JSObject>, IEnumerable<(JSName name, JSUnknow
         => new PropertyEnumerator(_value);
 
     public static implicit operator JSUnknown(JSObject value) => JSUnknown.FromJSValue(value._value);
+
+    public static JSObject? FromJSValue(JSValue? value)
+        => value != null ? new JSObject?(new() { _value = value.Value }) : null;
 
     public struct PropertyEnumerator : IEnumerator<(JSName name, JSUnknown value)>, IEnumerator
     {
@@ -308,78 +313,94 @@ public struct JSBigInt : IJSBigInt<JSBigInt>
     public static implicit operator JSUnknown(JSBigInt value) => JSUnknown.FromJSValue(value._value);
 }
 
+public struct JSArray<T> : IJSArray<JSArray<T>>
+    where T : struct, IJSUnknown<T>
+{
+    private JSValue _value;
+
+    public static JSArray<T> FromJSValue(JSValue value) => new() { _value = value };
+    public static JSValue ToJSValue(JSArray<T> value) => value._value;
+
+    public static implicit operator JSUnknown(JSArray<T> value) => JSUnknown.FromJSValue(value._value);
+    public static implicit operator JSObject(JSArray<T> value) => JSObject.FromJSValue(value._value);
+}
+
 public static class JSUnknownExtensions
 {
-    public static JSValueType TypeOf<T>(this T thisValue) where T : IJSUnknown<T>
-    {
-        return T.ToJSValue(thisValue).TypeOf();
-    }
+    public static JSValueType TypeOf<T>(this T thisValue) where T : struct, IJSUnknown<T>
+        => T.ToJSValue(thisValue).TypeOf();
 
-    public static bool IsUndefined<T>(this T thisValue) where T : IJSUnknown<T> => thisValue.TypeOf() == JSValueType.Undefined;
-    public static bool IsNull<T>(this T thisValue) where T : IJSUnknown<T> => thisValue.TypeOf() == JSValueType.Null;
-    public static bool IsBoolean<T>(this T thisValue) where T : IJSUnknown<T> => thisValue.TypeOf() == JSValueType.Boolean;
-    public static bool IsNumber<T>(this T thisValue) where T : IJSUnknown<T> => thisValue.TypeOf() == JSValueType.Number;
-    public static bool IsString<T>(this T thisValue) where T : IJSUnknown<T> => thisValue.TypeOf() == JSValueType.String;
-    public static bool IsSymbol<T>(this T thisValue) where T : IJSUnknown<T> => thisValue.TypeOf() == JSValueType.Symbol;
-    public static bool IsObject<T>(this T thisValue) where T : IJSUnknown<T> => thisValue.TypeOf() == JSValueType.Object;
-    public static bool IsFunction<T>(this T thisValue) where T : IJSUnknown<T> => thisValue.TypeOf() == JSValueType.Function;
-    public static bool IsExternal<T>(this T thisValue) where T : IJSUnknown<T> => thisValue.TypeOf() == JSValueType.External;
-    public static bool IsBigInt<T>(this T thisValue) where T : IJSUnknown<T> => thisValue.TypeOf() == JSValueType.BigInt;
+    public static bool IsUndefined<T>(this T thisValue) where T : struct, IJSUnknown<T> => thisValue.TypeOf() == JSValueType.Undefined;
+    public static bool IsNull<T>(this T thisValue) where T : struct, IJSUnknown<T> => thisValue.TypeOf() == JSValueType.Null;
+    public static bool IsBoolean<T>(this T thisValue) where T : struct, IJSUnknown<T> => thisValue.TypeOf() == JSValueType.Boolean;
+    public static bool IsNumber<T>(this T thisValue) where T : struct, IJSUnknown<T> => thisValue.TypeOf() == JSValueType.Number;
+    public static bool IsString<T>(this T thisValue) where T : struct, IJSUnknown<T> => thisValue.TypeOf() == JSValueType.String;
+    public static bool IsSymbol<T>(this T thisValue) where T : struct, IJSUnknown<T> => thisValue.TypeOf() == JSValueType.Symbol;
+    public static bool IsObject<T>(this T thisValue) where T : struct, IJSUnknown<T> => thisValue.TypeOf() == JSValueType.Object;
+    public static bool IsFunction<T>(this T thisValue) where T : struct, IJSUnknown<T> => thisValue.TypeOf() == JSValueType.Function;
+    public static bool IsExternal<T>(this T thisValue) where T : struct, IJSUnknown<T> => thisValue.TypeOf() == JSValueType.External;
+    public static bool IsBigInt<T>(this T thisValue) where T : struct, IJSUnknown<T> => thisValue.TypeOf() == JSValueType.BigInt;
 
-    public static JSBoolean ToJSBoolean<T>(this T thisValue) where T : IJSUnknown<T>
+    public static JSBoolean ToJSBoolean<T>(this T thisValue) where T : struct, IJSUnknown<T>
         => JSBoolean.FromJSValue(T.ToJSValue(thisValue).CoerceToBoolean());
 
-    public static JSNumber ToJSNumber<T>(this T thisValue) where T : IJSUnknown<T>
+    public static JSNumber ToJSNumber<T>(this T thisValue) where T : struct, IJSUnknown<T>
         => JSNumber.FromJSValue(T.ToJSValue(thisValue).CoerceToNumber());
 
-    public static JSObject ToJSObject<T>(this T thisValue) where T : IJSUnknown<T>
+    public static JSObject ToJSObject<T>(this T thisValue) where T : struct, IJSUnknown<T>
         => JSObject.FromJSValue(T.ToJSValue(thisValue).CoerceToObject());
 
-    public static JSString ToJSString<T>(this T thisValue) where T : IJSUnknown<T>
+    public static JSString ToJSString<T>(this T thisValue) where T : struct, IJSUnknown<T>
         => JSString.FromJSValue(T.ToJSValue(thisValue).CoerceToString());
 }
 
 public static class JSObjectExtensions
 {
-    //public static bool HasProperty<T>(this T thisObject) where T : struct, IJsObject<T>
-    //{
-    //    return ((JSValue)thisObject).HasProperty("aaaa");
-    //}
+    public static JSObject? GetPrototypeOf<T>(this T thisObject) where T : struct, IJSObject<T>
+    {
+        JSValue prototype = T.ToJSValue(thisObject).GetPrototype();
+        return prototype.TypeOf() == JSValueType.Object ? new JSObject?(JSObject.FromJSValue(prototype)) : null;
+    }
 
-    //public static bool HasProperty<T>(this T thisObject, JsName name) where T : struct, IJsObject<T>
-    //{
-    //    return ((JSValue)thisObject).HasProperty(name);
-    //}
+    public static JSArray<JSString> Keys<T>(this T thisObject) where T : struct, IJSObject<T>
+        => JSArray<JSString>.FromJSValue(T.ToJSValue(thisObject).GetPropertyNames());
 
-    //public static bool HasOwnProperty<T>(this T thisObject, JsName name) where T : struct, IJsObject<T>
-    //{
-    //    return ((JSValue)thisObject).HasProperty(name);
-    //}
+    public static JSArray<JSString> GetOwnPropertyNames<T>(this T thisObject) where T : struct, IJSObject<T>
+        => JSArray<JSString>.FromJSValue(T.ToJSValue(thisObject).GetAllPropertyNames(
+            JSKeyCollectionMode.OwnOnly, JSKeyFilter.SkipSymbols, JSKeyConversion.NumbersToStrings));
 
-    //public static JsUnknown GetProperty<T>(this T thisObject, JsName name) where T : struct, IJsObject<T>
-    //{
-    //    return ((JSValue)thisObject).GetProperty(name);
-    //}
+    public static JSArray<JSString> GetOwnPropertySymbols<T>(this T thisObject) where T : struct, IJSObject<T>
+        => JSArray<JSString>.FromJSValue(T.ToJSValue(thisObject).GetAllPropertyNames(
+            JSKeyCollectionMode.OwnOnly, JSKeyFilter.SkipStrings, JSKeyConversion.NumbersToStrings));
 
-    //public static void SetProperty<T>(this T thisObject, JsName name, JsUnknown value) where T : struct, IJsObject<T>
-    //{
-    //    ((JSValue)thisObject).SetProperty(name, value);
-    //}
+    public static JSArray<JSString> GetAllPropertySymbols<T>(this T thisObject, JSKeyCollectionMode mode, JSKeyFilter filter, JSKeyConversion conversion)
+        where T : struct, IJSObject<T>
+        => JSArray<JSString>.FromJSValue(T.ToJSValue(thisObject).GetAllPropertyNames(mode, filter, conversion));
 
-    //public static void DeleteProperty<T>(this T thisObject, JsName name) where T : struct, IJsObject<T>
-    //{
-    //    ((JSValue)thisObject).DeleteProperty(name);
-    //}
+    public static bool HasProperty<T>(this T thisObject, JSName key) where T : struct, IJSObject<T>
+        => T.ToJSValue(thisObject).HasProperty(JSName.ToJSValue(key));
 
-    //public static void Freeze<T>(this T obj) where T : struct, IJsObject<T>
-    //{
-    //    ((JSValue)obj).Freeze();
-    //}
+    public static bool HasOwnProperty<T>(this T thisObject, JSName key) where T : struct, IJSObject<T>
+        => T.ToJSValue(thisObject).HasOwnProperty(JSName.ToJSValue(key));
 
-    //public static void Seal<T>(this T obj) where T : struct, IJsObject<T>
-    //{
-    //    ((JSValue)obj).Seal();
-    //}
+    public static JSUnknown GetProperty<T>(this T thisObject, JSName key) where T : struct, IJSObject<T>
+        => JSUnknown.FromJSValue(T.ToJSValue(thisObject).GetProperty(JSName.ToJSValue(key)));
+
+    public static void SetProperty<T>(this T thisObject, JSName key, JSValue value) where T : struct, IJSObject<T>
+        => T.ToJSValue(thisObject).SetProperty(JSName.ToJSValue(key), value);
+
+    public static bool DeleteProperty<T>(this T thisObject, JSName key) where T : struct, IJSObject<T>
+        => T.ToJSValue(thisObject).DeleteProperty(JSName.ToJSValue(key));
+
+    public static void Freeze<T>(this T thisObject, JSName key) where T : struct, IJSObject<T>
+    {
+        T.ToJSValue(thisObject).Freeze();
+    }
+
+    public static void Seal<T>(this T thisObject, JSName key) where T : struct, IJSObject<T>
+    {
+        T.ToJSValue(thisObject).Seal();
+    }
 }
 
 public static class Foo
@@ -402,11 +423,12 @@ public static class Foo
 
         //obj.HasProperty();
 
+        //JSObject obj1 = new JSObject()
+        //{
+        //    ["foo"] = 5,
+        //    ["bar"] = "sss",
+        //};
     }
-}
-
-public struct JSArray
-{
 }
 
 public struct JSDate
