@@ -188,6 +188,15 @@ public static partial class JSNativeApi
         return result;
     }
 
+    public static unsafe JSValue SymbolFor(ReadOnlySpan<byte> utf8Name)
+    {
+        fixed (byte* name = utf8Name)
+        {
+            node_api_symbol_for(Env, name, (nuint)utf8Name.Length, out napi_value result).ThrowIfFailed();
+            return result;
+        }
+    }
+
     public static unsafe JSValue CreateFunction(
       ReadOnlySpan<byte> utf8Name,
       napi_callback callback,
@@ -239,6 +248,13 @@ public static partial class JSNativeApi
         napi_create_range_error(Env, (napi_value)code, (napi_value)message, out napi_value result).ThrowIfFailed();
         return result;
     }
+
+    public static JSValue CreateSyntaxError(JSValue code, JSValue message)
+    {
+        node_api_create_syntax_error(Env, (napi_value)code, (napi_value)message, out napi_value result).ThrowIfFailed();
+        return result;
+    }
+
     public static unsafe JSValueType TypeOf(this JSValue value)
     {
         napi_typeof(Env, (napi_value)value, out napi_valuetype result).ThrowIfFailed();
@@ -375,6 +391,7 @@ public static partial class JSNativeApi
         napi_coerce_to_string(Env, (napi_value)value, out napi_value result).ThrowIfFailed();
         return result;
     }
+
     public static JSValue GetPrototype(this JSValue value)
     {
         napi_get_prototype(Env, (napi_value)value, out napi_value result).ThrowIfFailed();
@@ -626,6 +643,11 @@ public static partial class JSNativeApi
     public static void ThrowRangeError(string code, string message)
     {
         napi_throw_range_error(Env, code, message).ThrowIfFailed();
+    }
+
+    public static void ThrowSyntaxError(string code, string message)
+    {
+        node_api_throw_syntax_error(Env, code, message).ThrowIfFailed();
     }
 
     public static bool IsError(this JSValue thisValue)

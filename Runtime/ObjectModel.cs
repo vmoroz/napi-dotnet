@@ -1,26 +1,8 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices.JavaScript;
-using System.Text;
-using System.Text.Json.Nodes;
-using System.Threading.Tasks;
 
 namespace NodeApi;
-
-//Undefined,
-//Null,
-//Boolean,
-//Number,
-//String,
-//Symbol,
-//Object,
-//Function,
-//External,
-//BigInt,
 
 public interface IJSUnknown<TSelf>
     where TSelf : IJSUnknown<TSelf>
@@ -39,12 +21,17 @@ public interface IJSNumber<TSelf> : IJSUnknown<TSelf>
 {
 }
 
-public interface IJSString<TSelf> : IJSUnknown<TSelf>
+public interface IJSName<TSelf> : IJSUnknown<TSelf>
+    where TSelf : IJSName<TSelf>
+{
+}
+
+public interface IJSString<TSelf> : IJSName<TSelf>
     where TSelf : IJSString<TSelf>
 {
 }
 
-public interface IJSSymbol<TSelf> : IJSUnknown<TSelf>
+public interface IJSSymbol<TSelf> : IJSName<TSelf>
     where TSelf : IJSSymbol<TSelf>
 {
 }
@@ -80,6 +67,8 @@ public struct JSUnknown : IJSUnknown<JSUnknown>
 
     public static JSUnknown FromJSValue(JSValue value) => new() { _value = value };
     public static JSValue ToJSValue(JSUnknown value) => value._value;
+
+    public static implicit operator JSUnknown(JSValue value) => new() { _value = value };
 }
 
 public struct JSBoolean : IJSBoolean<JSBoolean>
@@ -140,6 +129,16 @@ public struct JSNumber : IJSNumber<JSNumber>
     public static explicit operator double(JSNumber value) => value._value.GetValueDouble();
 }
 
+public struct JSName : IJSName<JSName>
+{
+    private JSValue _value;
+
+    public static JSName FromJSValue(JSValue value) => new() { _value = value };
+    public static JSValue ToJSValue(JSName value) => value._value;
+
+    public static implicit operator JSUnknown(JSName value) => JSUnknown.FromJSValue(value._value);
+}
+
 public struct JSString : IJSString<JSString>
 {
     private JSValue _value;
@@ -162,6 +161,7 @@ public struct JSString : IJSString<JSString>
     public int ToUtf16(Span<char> data) => _value.GetValueStringUtf16(data);
 
     public static implicit operator JSUnknown(JSString value) => JSUnknown.FromJSValue(value._value);
+    public static implicit operator JSName(JSString value) => JSName.FromJSValue(value._value);
 
     public static implicit operator JSString(string value) => new(value);
     public static implicit operator JSString(ReadOnlySpan<char> value) => FromUtf16(value);
@@ -179,13 +179,16 @@ public struct JSSymbol : IJSSymbol<JSSymbol>
 
     public JSSymbol(JSValue description) => JSNativeApi.CreateSymbol(description);
 
+    public static JSSymbol SymbolFor(ReadOnlySpan<byte> utf8Name) => new() { _value = JSNativeApi.SymbolFor(utf8Name) };
+
     public static JSSymbol FromJSValue(JSValue value) => new() { _value = value };
     public static JSValue ToJSValue(JSSymbol value) => value._value;
 
     public static implicit operator JSUnknown(JSSymbol value) => JSUnknown.FromJSValue(value._value);
+    public static implicit operator JSName(JSSymbol value) => JSName.FromJSValue(value._value);
 }
 
-public struct JSObject : IJSObject<JSObject>
+public struct JSObject : IJSObject<JSObject>, IEnumerable<(JSName name, JSUnknown value)>
 {
     private JSValue _value;
 
@@ -194,7 +197,84 @@ public struct JSObject : IJSObject<JSObject>
     public static JSObject FromJSValue(JSValue value) => new() { _value = value };
     public static JSValue ToJSValue(JSObject value) => value._value;
 
+    public PropertyEnumerator GetEnumerator()
+        => new PropertyEnumerator(_value);
+
+    IEnumerator<(JSName name, JSUnknown value)> IEnumerable<(JSName name, JSUnknown value)>.GetEnumerator()
+        => new PropertyEnumerator(_value);
+
+    IEnumerator IEnumerable.GetEnumerator()
+        => new PropertyEnumerator(_value);
+
     public static implicit operator JSUnknown(JSObject value) => JSUnknown.FromJSValue(value._value);
+
+    public struct PropertyEnumerator : IEnumerator<(JSName name, JSUnknown value)>, IEnumerator
+    {
+        private readonly JSValue _value;
+        private readonly JSValue _names;
+        private readonly int _count;
+        private int _index;
+        private (JSName name, JSUnknown value)? _current;
+
+        internal PropertyEnumerator(JSValue value)
+        {
+            _value = value;
+            JSValueType valueType = value.TypeOf();
+            if (valueType == JSValueType.Object || valueType == JSValueType.Function)
+            {
+                JSValue names = value.GetPropertyNames();
+                _names = names;
+                _count = names.GetArrayLength();
+            }
+            else
+            {
+                _names = JSValue.Undefined;
+                _count = 0;
+            }
+            _index = 0;
+            _current = default;
+        }
+
+        public void Dispose()
+        {
+        }
+
+        public bool MoveNext()
+        {
+            if (_index < _count)
+            {
+                JSValue name = _names.GetElement(_index);
+                _current = (JSName.FromJSValue(name), _value.GetProperty(name));
+                _index++;
+                return true;
+            }
+
+            _index = _count + 1;
+            _current = default;
+            return false;
+        }
+
+        public (JSName name, JSUnknown value) Current
+            => _current ?? throw new InvalidOperationException("Unexpected enumerator state");
+
+        object? IEnumerator.Current
+        {
+            get
+            {
+                if (_index == 0 || _index == _count + 1)
+                {
+                    throw new InvalidOperationException("Invalid enumerator state");
+                }
+                return Current;
+            }
+        }
+
+        void IEnumerator.Reset()
+        {
+            _index = 0;
+            _current = default;
+        }
+    }
 }
 
 public struct JSFunction : IJSFunction<JSFunction>
@@ -245,6 +325,18 @@ public static class JSUnknownExtensions
     public static bool IsFunction<T>(this T thisValue) where T : IJSUnknown<T> => thisValue.TypeOf() == JSValueType.Function;
     public static bool IsExternal<T>(this T thisValue) where T : IJSUnknown<T> => thisValue.TypeOf() == JSValueType.External;
     public static bool IsBigInt<T>(this T thisValue) where T : IJSUnknown<T> => thisValue.TypeOf() == JSValueType.BigInt;
+
+    public static JSBoolean ToJSBoolean<T>(this T thisValue) where T : IJSUnknown<T>
+        => JSBoolean.FromJSValue(T.ToJSValue(thisValue).CoerceToBoolean());
+
+    public static JSNumber ToJSNumber<T>(this T thisValue) where T : IJSUnknown<T>
+        => JSNumber.FromJSValue(T.ToJSValue(thisValue).CoerceToNumber());
+
+    public static JSObject ToJSObject<T>(this T thisValue) where T : IJSUnknown<T>
+        => JSObject.FromJSValue(T.ToJSValue(thisValue).CoerceToObject());
+
+    public static JSString ToJSString<T>(this T thisValue) where T : IJSUnknown<T>
+        => JSString.FromJSValue(T.ToJSValue(thisValue).CoerceToString());
 }
 
 public static class JSObjectExtensions
