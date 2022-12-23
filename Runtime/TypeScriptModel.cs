@@ -183,6 +183,62 @@ public struct PropertyDescriptorMap
     }
 }
 
+// interface Object
+public struct Object
+{
+    private JSValue _value;
+
+    public static explicit operator Object(JSValue value) => new Object { _value = value };
+    public static implicit operator JSValue(Object value) => value._value;
+
+    /** The initial value of Object.prototype.constructor is the standard built-in Object constructor. */
+    //constructor: Function;
+    public Function Constructor
+    {
+        get => (Function)_value.GetProperty(NameTable.constructor);
+        set => _value.SetProperty(NameTable.constructor, value);
+    }
+
+    /** Returns a string representation of an object. */
+    // toString(): string;
+    public new String ToString()
+        => (String)_value.CallMethod(NameTable.toString);
+
+    /** Returns a date converted to a string using the current locale. */
+    // toLocaleString(): string;
+    public new String ToLocaleString()
+        => (String)_value.CallMethod(NameTable.toLocaleString);
+
+    /** Returns the primitive value of the specified object. */
+    // valueOf(): Object;
+    public Object ValueOf()
+        => (Object)_value.CallMethod(NameTable.valueOf);
+
+    /**
+     * Determines whether an object has a property with the specified name.
+     * @param v A property name.
+     */
+    // hasOwnProperty(v: PropertyKey): boolean;
+    public Boolean HasOwnProperty()
+        => (Boolean)_value.CallMethod(NameTable.hasOwnProperty);
+
+    /**
+     * Determines whether an object exists in another object's prototype chain.
+     * @param v Another object whose prototype chain is to be checked.
+     */
+    // isPrototypeOf(v: Object): boolean;
+    public Boolean IsPrototypeOf(Object value)
+        => (Boolean)_value.CallMethod(NameTable.isPrototypeOf, value);
+
+    /**
+     * Determines whether a specified property is enumerable.
+     * @param v A property name.
+     */
+    // propertyIsEnumerable(v: PropertyKey): boolean;
+    public Boolean PropertyIsEnumerable(PropertyKey key)
+        => (Boolean)_value.CallMethod(NameTable.propertyIsEnumerable, key);
+}
+
 public class NameTable
 {
     public static JSValue NaN => GetStringName(nameof(NaN));
@@ -204,6 +260,11 @@ public class NameTable
     public static JSValue writable => GetStringName(nameof(writable));
     public static JSValue get => GetStringName(nameof(get));
     public static JSValue set => GetStringName(nameof(set));
+    public static JSValue constructor => GetStringName(nameof(constructor));
+    public static JSValue toLocaleString => GetStringName(nameof(toLocaleString));
+    public static JSValue hasOwnProperty => GetStringName(nameof(hasOwnProperty));
+    public static JSValue isPrototypeOf => GetStringName(nameof(isPrototypeOf));
+    public static JSValue propertyIsEnumerable => GetStringName(nameof(propertyIsEnumerable));
 
 
 
@@ -211,7 +272,8 @@ public class NameTable
     public static JSValue GetStringName(string value) => JSValue.Null;
 }
 
-public struct Union<T1, T2, T3> {
+public struct Union<T1, T2, T3>
+{
     private JSValue _value;
 
     public static explicit operator Union<T1, T2, T3>(JSValue value) => new Union<T1, T2, T3> { _value = value };
@@ -240,6 +302,14 @@ public struct Number
         => value.TypeOf() == JSValueType.Number ? (Number)value : null;
     public static implicit operator JSValue(Number? value)
         => value is Number numberValue ? numberValue._value : JSValue.Undefined;
+}
+
+public struct Function
+{
+    private JSValue _value;
+
+    public static explicit operator Function(JSValue value) => new Function { _value = value };
+    public static implicit operator JSValue(Function value) => value._value;
 }
 
 public struct Function<TResult>
