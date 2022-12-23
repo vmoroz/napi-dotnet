@@ -42,7 +42,6 @@ public partial struct Global
     public Number ParseInt(String value, Number? radix = null)
         => (Number)CallMethod(NameTable.parseInt, value, radix);
 
-
     // es5.d.ts: declare function parseFloat(string: string): number;
     public Number ParseFloat(String value)
         => (Number)CallMethod(NameTable.parseFloat, value);
@@ -71,9 +70,102 @@ public partial struct Global
     public String EncodeURIComponent(Union<String, Number, Boolean> value)
         => (String)CallMethod(NameTable.encodeURIComponent, value);
 
+    // es5.d.ts: deprecated: declare function escape(string: string): string;
+    // es5.d.ts: deprecated: declare function unescape(string: string): string;
 
     private JSValue CallMethod(JSValue name, params JSValue[] args)
         => _value.GetProperty(name).Call(_value, args);
+}
+
+public static class Ext
+{
+    public static JSValue CallMethod(this JSValue thisValue, JSValue name, params JSValue[] args)
+        => thisValue.GetProperty(name).Call(thisValue, args);
+}
+
+// es5.d.ts: interface Symbol
+public partial struct Symbol
+{
+    private JSValue _value;
+
+    public static explicit operator Symbol(JSValue value) => new Symbol { _value = value };
+    public static implicit operator JSValue(Symbol value) => value._value;
+
+    // toString(): string;
+    public new String ToString()
+        => (String)_value.CallMethod(NameTable.toString);
+
+    // valueOf(): symbol;
+    public Symbol ValueOf()
+        => (Symbol)_value.CallMethod(NameTable.valueOf);
+}
+
+// declare type PropertyKey = string | number | symbol;
+public struct PropertyKey
+{
+    private JSValue _value;
+
+    public static explicit operator PropertyKey(JSValue value) => new PropertyKey { _value = value };
+    public static implicit operator JSValue(PropertyKey value) => value._value;
+
+    public static implicit operator PropertyKey(String value) => new PropertyKey { _value = (JSValue)value };
+    public static implicit operator PropertyKey(Number value) => new PropertyKey { _value = (JSValue)value };
+    public static implicit operator PropertyKey(Symbol value) => new PropertyKey { _value = (JSValue)value };
+
+    public static explicit operator String(PropertyKey value) => (String)value._value;
+    public static explicit operator Number(PropertyKey value) => (Number)value._value;
+    public static explicit operator Symbol(PropertyKey value) => (Symbol)value._value;
+}
+
+// interface PropertyDescriptor
+public struct PropertyDescriptor
+{
+    private JSValue _value;
+
+    public static explicit operator PropertyDescriptor(JSValue value) => new PropertyDescriptor { _value = value };
+    public static implicit operator JSValue(PropertyDescriptor value) => value._value;
+
+    //configurable?: boolean;
+    public Boolean? Configurable
+    {
+        get => (Boolean?)_value.GetProperty(NameTable.configurable);
+        set => _value.SetProperty(NameTable.configurable, value);
+    }
+
+    //enumerable?: boolean;
+    public Boolean? Enumerable
+    {
+        get => (Boolean?)_value.GetProperty(NameTable.enumerable);
+        set => _value.SetProperty(NameTable.enumerable, value);
+    }
+
+    //value?: any;
+    public Any? Value
+    {
+        get => (Any?)_value.GetProperty(NameTable.enumerable);
+        set => _value.SetProperty(NameTable.enumerable, value);
+    }
+
+    //writable?: boolean;
+    public Boolean? Writable
+    {
+        get => (Boolean?)_value.GetProperty(NameTable.writable);
+        set => _value.SetProperty(NameTable.writable, value);
+    }
+
+    //get? (): any;
+    public Function<Any>? Get
+    {
+        get => (Function<Any>?)_value.GetProperty(NameTable.get);
+        set => _value.SetProperty(NameTable.get, value);
+    }
+
+    //set? (v: any): void;
+    public Function<Any, Void>? Set
+    {
+        get => (Function<Any, Void>?)_value.GetProperty(NameTable.set);
+        set => _value.SetProperty(NameTable.set, value);
+    }
 }
 
 public class NameTable
@@ -89,6 +181,15 @@ public class NameTable
     public static JSValue decodeURIComponent => GetStringName(nameof(decodeURIComponent));
     public static JSValue encodeURI => GetStringName(nameof(encodeURI));
     public static JSValue encodeURIComponent => GetStringName(nameof(encodeURIComponent));
+    public static JSValue toString => GetStringName(nameof(toString));
+    public static JSValue valueOf => GetStringName(nameof(valueOf));
+    public static JSValue configurable => GetStringName(nameof(configurable));
+    public static JSValue enumerable => GetStringName(nameof(enumerable));
+    public static JSValue value => GetStringName(nameof(value));
+    public static JSValue writable => GetStringName(nameof(writable));
+    public static JSValue get => GetStringName(nameof(get));
+    public static JSValue set => GetStringName(nameof(set));
+
 
 
     // TODO: Implement
@@ -120,8 +221,44 @@ public struct Number
     public static explicit operator Number(JSValue value) => new Number { _value = value };
     public static implicit operator JSValue(Number value) => value._value;
 
+    public static explicit operator Number?(JSValue value)
+        => value.TypeOf() == JSValueType.Number ? (Number)value : null;
     public static implicit operator JSValue(Number? value)
         => value is Number numberValue ? numberValue._value : JSValue.Undefined;
+}
+
+public struct Function<TResult>
+{
+    private JSValue _value;
+
+    public static explicit operator Function<TResult>(JSValue value) => new Function<TResult> { _value = value };
+    public static implicit operator JSValue(Function<TResult> value) => value._value;
+
+    public static explicit operator Function<TResult>?(JSValue value)
+        => value.TypeOf() == JSValueType.Number ? (Function<TResult>)value : null;
+    public static implicit operator JSValue(Function<TResult>? value)
+        => value is Function<TResult> functionValue ? functionValue._value : JSValue.Undefined;
+}
+
+public struct Function<TArg1, TResult>
+{
+    private JSValue _value;
+
+    public static explicit operator Function<TArg1, TResult>(JSValue value) => new Function<TArg1, TResult> { _value = value };
+    public static implicit operator JSValue(Function<TArg1, TResult> value) => value._value;
+
+    public static explicit operator Function<TArg1, TResult>?(JSValue value)
+        => value.TypeOf() == JSValueType.Number ? (Function<TArg1, TResult>)value : null;
+    public static implicit operator JSValue(Function<TArg1, TResult>? value)
+        => value is Function<TArg1, TResult> functionValue ? functionValue._value : JSValue.Undefined;
+}
+
+public struct Void
+{
+    private JSValue _value;
+
+    public static explicit operator Void(JSValue value) => new Void { _value = value };
+    public static implicit operator JSValue(Void value) => value._value;
 }
 
 public struct Any
@@ -130,6 +267,11 @@ public struct Any
 
     public static explicit operator Any(JSValue value) => new Any { _value = value };
     public static implicit operator JSValue(Any value) => value._value;
+
+    public static explicit operator Any?(JSValue value)
+        => value.TypeOf() != JSValueType.Undefined ? (Any)value : null;
+    public static implicit operator JSValue(Any? value)
+        => value is Any anyValue ? anyValue._value : JSValue.Undefined;
 }
 
 public struct String
