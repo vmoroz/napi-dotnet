@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -81,11 +82,72 @@ class MySimpleAttribute : Attribute {
     public MySimpleAttribute(string name) { this.Name = name;}
 }
 
+interface IFoo<T>
+{
+}
+
+struct Foo<T> : IFoo<T>
+{
+}
+
+struct Bar
+{
+    public int BarValue { get; set; }
+}
+
+class Baz
+{
+    public string BazValue { get; set; }
+
+    public void Print() { }
+
+    public string CustomValue => "World";
+
+    public string CustomValue2 { get => "World"; set { } }
+}
+
+struct BarTag
+{
+}
+
+struct BazTag
+{
+}
+
+struct TS
+{
+    public static Bar As(IFoo<BarTag> _)
+    {
+        return new Bar();
+    }
+
+    public static Baz As(IFoo<BazTag> _)
+    {
+        return new Baz();
+    }
+}
+
 struct SimpleTest
 {
-    void Func((int a, int b) x) { }
-    void Test(TsObject<(TsString foo, TsOptional<TsString> bar)> objType)
+    public void Func((int a, int b) x) { }
+    public void Test(TsObject<(TsString foo, TsOptional<TsString> bar)> objType)
     {
+    }
+
+    public void Test2(Foo<BarTag> objType)
+    {
+        var x = TS.As(objType);
+        x.BarValue = 2;
+    }
+
+    public void Test3(Foo<BazTag> objType)
+    {
+        var x = TS.As(objType);
+        x.BazValue = "Hello";
+
+        TS.As(objType).Print();
+        var w = TS.As(objType).CustomValue;
+        TS.As(objType).CustomValue2 = "aaa";
 
     }
 }
