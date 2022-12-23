@@ -454,6 +454,35 @@ public struct ObjectConstructor
         => (Array<String>)_value.CallMethod(NameTable.keys, value);
 }
 
+/**
+ * Represents a raw buffer of binary data, which is used to store data for the
+ * different typed arrays. ArrayBuffers cannot be read from or written to directly,
+ * but can be passed to a typed array or DataView Object to interpret the raw
+ * buffer as needed.
+ */
+// interface ArrayBuffer
+public struct ArrayBuffer : IUnknown<ArrayBuffer>
+{
+    private JSValue _value;
+
+    public static explicit operator ArrayBuffer(JSValue value) => new ArrayBuffer { _value = value };
+    public static implicit operator JSValue(ArrayBuffer value) => value._value;
+
+    /**
+     * Read-only. The length of the ArrayBuffer (in bytes).
+     */
+    //readonly byteLength: number;
+    public Number ByteLength => (Number)_value.GetProperty(NameTable.byteLength);
+
+
+    /**
+     * Returns a section of an ArrayBuffer.
+     */
+    //slice(begin: number, end?: number): ArrayBuffer;
+    public ArrayBuffer Slice(Number begin, Number? end = null)
+        => (ArrayBuffer)_value.CallMethod(NameTable.slice, begin, end);
+}
+
 public partial struct Global
 {
     /**
@@ -508,7 +537,8 @@ public class NameTable
     public static JSValue isExtensible => GetStringName(nameof(isExtensible));
     public static JSValue keys => GetStringName(nameof(keys));
     public static JSValue Object => GetStringName(nameof(Object));
-
+    public static JSValue byteLength => GetStringName(nameof(byteLength));
+    public static JSValue slice => GetStringName(nameof(slice));
 
     // TODO: Implement
     public static JSValue GetStringName(string value) => JSValue.Null;
