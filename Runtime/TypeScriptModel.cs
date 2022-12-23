@@ -168,6 +168,21 @@ public struct PropertyDescriptor
     }
 }
 
+// interface PropertyDescriptorMap
+public struct PropertyDescriptorMap
+{
+    private JSValue _value;
+
+    public static explicit operator PropertyDescriptorMap(JSValue value) => new PropertyDescriptorMap { _value = value };
+    public static implicit operator JSValue(PropertyDescriptorMap value) => value._value;
+
+    public PropertyDescriptor this[PropertyKey key]
+    {
+        get => (PropertyDescriptor)_value.GetProperty(key);
+        set => _value.SetProperty(key, value);
+    }
+}
+
 public class NameTable
 {
     public static JSValue NaN => GetStringName(nameof(NaN));
