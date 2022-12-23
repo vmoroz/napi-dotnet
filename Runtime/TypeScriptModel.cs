@@ -125,6 +125,10 @@ public struct PropertyDescriptor
     public static explicit operator PropertyDescriptor(JSValue value) => new PropertyDescriptor { _value = value };
     public static implicit operator JSValue(PropertyDescriptor value) => value._value;
 
+    public static explicit operator PropertyDescriptor?(JSValue value)
+        => value.TypeOf() == JSValueType.Object ? (PropertyDescriptor)value : null;
+
+
     //configurable?: boolean;
     public Boolean? Configurable
     {
@@ -183,6 +187,14 @@ public struct PropertyDescriptorMap
     }
 }
 
+public struct Nullable<T>
+{
+    private JSValue _value;
+
+    public static explicit operator Nullable<T>(JSValue value) => new Nullable<T> { _value = value };
+    public static implicit operator JSValue(Nullable<T> value) => value._value;
+}
+
 // interface Object
 public struct Object
 {
@@ -206,7 +218,7 @@ public struct Object
 
     /** Returns a date converted to a string using the current locale. */
     // toLocaleString(): string;
-    public new String ToLocaleString()
+    public String ToLocaleString()
         => (String)_value.CallMethod(NameTable.toLocaleString);
 
     /** Returns the primitive value of the specified object. */
@@ -239,6 +251,222 @@ public struct Object
         => (Boolean)_value.CallMethod(NameTable.propertyIsEnumerable, key);
 }
 
+public partial struct Global
+{
+    public static Global Instance => (Global)JSValue.Global;
+}
+
+/**
+ * Marker for contextual 'this' type
+ */
+// interface ThisType<T> { }
+public struct ThisType<T>
+{
+    private JSValue _value;
+
+    public static explicit operator ThisType<T>(JSValue value) => new ThisType<T> { _value = value };
+    public static implicit operator JSValue(ThisType<T> value) => value._value;
+}
+
+public struct Intersect<T1, T2>
+{
+    private JSValue _value;
+
+    public static explicit operator Intersect<T1, T2>(JSValue value) => new Intersect<T1, T2> { _value = value };
+    public static implicit operator JSValue(Intersect<T1, T2> value) => value._value;
+}
+
+public struct Readonly<T> : IUnknown<Readonly<T>>
+{
+    private JSValue _value;
+
+    public static explicit operator Readonly<T>(JSValue value) => new Readonly<T> { _value = value };
+    public static implicit operator JSValue(Readonly<T> value) => value._value;
+}
+
+public interface IUnknown<TSelf> where TSelf : IUnknown<TSelf>
+{
+    public static abstract explicit operator TSelf(JSValue value);
+    public static abstract implicit operator JSValue(TSelf value);
+}
+
+public interface IFunction<TSelf> : IUnknown<TSelf>
+    where TSelf : IFunction<TSelf>
+{
+}
+
+public struct ObjectConstructor
+{
+    private JSValue _value;
+
+    public static explicit operator ObjectConstructor(JSValue value) => new ObjectConstructor { _value = value };
+    public static implicit operator JSValue(ObjectConstructor value) => value._value;
+
+    // new(value?: any): Object;
+    public Object New(Any? value) =>
+        (Object)Global.Instance.Object._value.CallAsConstructor(value);
+
+    // (): any;
+    public Any Call() =>
+        (Any)Global.Instance.Object._value.Call();
+
+    // (value: any): any;
+    public Any Call(Any value) =>
+        (Any)Global.Instance.Object._value.Call(value);
+
+    /** A reference to the prototype for a class of objects. */
+    // readonly prototype: Object;
+    public Object Prototype => (Object)_value.GetProperty(NameTable.prototype);
+
+    /**
+     * Returns the prototype of an object.
+     * @param o The object that references the prototype.
+     */
+    // getPrototypeOf(o: any): any;
+    public Any PropertyIsEnumerable(Any value)
+        => (Any)_value.CallMethod(NameTable.getPrototypeOf, value);
+
+    /**
+     * Gets the own property descriptor of the specified object.
+     * An own property descriptor is one that is defined directly on the object and is not inherited from the object's prototype.
+     * @param o Object that contains the property.
+     * @param p Name of the property.
+     */
+    // getOwnPropertyDescriptor(o: any, p: PropertyKey): PropertyDescriptor | undefined;
+    public PropertyDescriptor? GetOwnPropertyDescriptor(Any value, PropertyKey key)
+        => (PropertyDescriptor?)_value.CallMethod(NameTable.getOwnPropertyDescriptor, value, key);
+
+    /**
+     * Returns the names of the own properties of an object. The own properties of an object are those that are defined directly
+     * on that object, and are not inherited from the object's prototype. The properties of an object include both fields (objects) and functions.
+     * @param o Object that contains the own properties.
+     */
+    // getOwnPropertyNames(o: any): string[];
+    public Array<String> GetOwnPropertyNames(Any value)
+        => (Array<String>)_value.CallMethod(NameTable.getOwnPropertyNames, value);
+
+    /**
+     * Creates an object that has the specified prototype or that has null prototype.
+     * @param o Object to use as a prototype. May be null.
+     */
+    // create(o: object | null): any;
+    public Any Create(Nullable<Object> value)
+        => (Any)_value.CallMethod(NameTable.create, value);
+    /**
+     * Creates an object that has the specified prototype, and that optionally contains specified properties.
+     * @param o Object to use as a prototype. May be null
+     * @param properties JavaScript object that contains one or more property descriptors.
+     */
+    // create(o: object | null, properties: PropertyDescriptorMap & ThisType<any>): any;
+    public Any Create(Nullable<Object> value, Intersect<PropertyDescriptorMap, ThisType<Any>> properties)
+        => (Any)_value.CallMethod(NameTable.create, value, properties);
+
+    /**
+     * Adds a property to an object, or modifies attributes of an existing property.
+     * @param o Object on which to add or modify the property. This can be a native JavaScript object (that is, a user-defined object or a built in object) or a DOM object.
+     * @param p The property name.
+     * @param attributes Descriptor for the property. It can be for a data property or an accessor property.
+     */
+    // defineProperty<T>(o: T, p: PropertyKey, attributes: PropertyDescriptor & ThisType<any>): T;
+    public T DefineProperty<T>(T value, PropertyKey key, Intersect<PropertyDescriptor, ThisType<Any>> attributes)
+        where T : struct, IUnknown<T>
+        => (T)_value.CallMethod(NameTable.defineProperty, value, key, attributes);
+    /**
+     * Adds one or more properties to an object, and/or modifies attributes of existing properties.
+     * @param o Object on which to add or modify the properties. This can be a native JavaScript object or a DOM object.
+     * @param properties JavaScript object that contains one or more descriptor objects. Each descriptor object describes a data property or an accessor property.
+     */
+    // defineProperties<T>(o: T, properties: PropertyDescriptorMap & ThisType<any>): T;
+    public T DefineProperties<T>(T value, Intersect<PropertyDescriptorMap, ThisType<Any>> properties)
+        where T : struct, IUnknown<T>
+        => (T)_value.CallMethod(NameTable.defineProperties, value, properties);
+
+    /**
+     * Prevents the modification of attributes of existing properties, and prevents the addition of new properties.
+     * @param o Object on which to lock the attributes.
+     */
+    // seal<T>(o: T): T;
+    public T Seal<T>(T value)
+        where T : struct, IUnknown<T>
+        => (T)_value.CallMethod(NameTable.seal, value);
+
+    /**
+     * Prevents the modification of existing property attributes and values, and prevents the addition of new properties.
+     * @param f Object on which to lock the attributes.
+     */
+    // freeze<T extends Function>(f: T): T;
+    //public T Freeze<T>(T value)
+    //    where T : struct, IFunction<T>
+    //    => (T)_value.CallMethod(NameTable.freeze, value);
+
+    /**
+     * Prevents the modification of existing property attributes and values, and prevents the addition of new properties.
+     * @param o Object on which to lock the attributes.
+     */
+    // freeze<T extends {[idx: string]: U | null | undefined | object}, U extends string | bigint | number | boolean | symbol>(o: T): Readonly<T>;
+
+    /**
+     * Prevents the modification of existing property attributes and values, and prevents the addition of new properties.
+     * @param o Object on which to lock the attributes.
+     */
+    // freeze<T>(o: T): Readonly<T>;
+    public Readonly<T> Freeze<T>(T value)
+        where T : struct, IUnknown<T>
+        => (Readonly<T>)_value.CallMethod(NameTable.freeze, value);
+
+    /**
+     * Prevents the addition of new properties to an object.
+     * @param o Object to make non-extensible.
+     */
+    // preventExtensions<T>(o: T): T;
+    public T PreventExtensions<T>(T value)
+        where T : struct, IUnknown<T>
+        => (T)_value.CallMethod(NameTable.preventExtensions, value);
+
+    /**
+     * Returns true if existing property attributes cannot be modified in an object and new properties cannot be added to the object.
+     * @param o Object to test.
+     */
+    // isSealed(o: any): boolean;
+    public Boolean IsSealed(Any value)
+        => (Boolean)_value.CallMethod(NameTable.isSealed, value);
+
+    /**
+     * Returns true if existing property attributes and values cannot be modified in an object, and new properties cannot be added to the object.
+     * @param o Object to test.
+     */
+    // isFrozen(o: any): boolean;
+    public Boolean IsFrozen(Any value)
+        => (Boolean)_value.CallMethod(NameTable.isFrozen, value);
+    /**
+     * Returns a value that indicates whether new properties can be added to an object.
+     * @param o Object to test.
+     */
+    // isExtensible(o: any): boolean;
+    public Boolean IsExtensible(Any value)
+        => (Boolean)_value.CallMethod(NameTable.isExtensible, value);
+    /**
+     * Returns the names of the enumerable string properties and methods of an object.
+     * @param o Object that contains the properties and methods. This can be an object that you created or an existing Document Object Model (DOM) object.
+     */
+    // keys(o: object): string[];
+    public Array<String> Keys(Object value)
+        => (Array<String>)_value.CallMethod(NameTable.keys, value);
+}
+
+public partial struct Global
+{
+    /**
+     * Provides functionality common to all JavaScript objects.
+     */
+    // declare var Object: ObjectConstructor;
+    public ObjectConstructor Object
+    {
+        get => (ObjectConstructor)_value.GetProperty(NameTable.Object);
+        set => _value.SetProperty(NameTable.Object, value);
+    }
+}
+
 public class NameTable
 {
     public static JSValue NaN => GetStringName(nameof(NaN));
@@ -265,7 +493,21 @@ public class NameTable
     public static JSValue hasOwnProperty => GetStringName(nameof(hasOwnProperty));
     public static JSValue isPrototypeOf => GetStringName(nameof(isPrototypeOf));
     public static JSValue propertyIsEnumerable => GetStringName(nameof(propertyIsEnumerable));
-
+    public static JSValue prototype => GetStringName(nameof(prototype));
+    public static JSValue getPrototypeOf => GetStringName(nameof(getPrototypeOf));
+    public static JSValue getOwnPropertyDescriptor => GetStringName(nameof(getOwnPropertyDescriptor));
+    public static JSValue getOwnPropertyNames => GetStringName(nameof(getOwnPropertyNames));
+    public static JSValue create => GetStringName(nameof(create));
+    public static JSValue defineProperty => GetStringName(nameof(defineProperty));
+    public static JSValue defineProperties => GetStringName(nameof(defineProperties));
+    public static JSValue seal => GetStringName(nameof(seal));
+    public static JSValue freeze => GetStringName(nameof(freeze));
+    public static JSValue preventExtensions => GetStringName(nameof(preventExtensions));
+    public static JSValue isSealed => GetStringName(nameof(isSealed));
+    public static JSValue isFrozen => GetStringName(nameof(isFrozen));
+    public static JSValue isExtensible => GetStringName(nameof(isExtensible));
+    public static JSValue keys => GetStringName(nameof(keys));
+    public static JSValue Object => GetStringName(nameof(Object));
 
 
     // TODO: Implement
@@ -304,7 +546,7 @@ public struct Number
         => value is Number numberValue ? numberValue._value : JSValue.Undefined;
 }
 
-public struct Function
+public struct Function : IFunction<Function>
 {
     private JSValue _value;
 
@@ -312,7 +554,7 @@ public struct Function
     public static implicit operator JSValue(Function value) => value._value;
 }
 
-public struct Function<TResult>
+public struct Function<TResult> : IFunction<Function<TResult>>
 {
     private JSValue _value;
 
@@ -325,7 +567,7 @@ public struct Function<TResult>
         => value is Function<TResult> functionValue ? functionValue._value : JSValue.Undefined;
 }
 
-public struct Function<TArg1, TResult>
+public struct Function<TArg1, TResult> : IFunction<Function<TArg1, TResult>>
 {
     private JSValue _value;
 
@@ -357,6 +599,19 @@ public struct Any
         => value.TypeOf() != JSValueType.Undefined ? (Any)value : null;
     public static implicit operator JSValue(Any? value)
         => value is Any anyValue ? anyValue._value : JSValue.Undefined;
+}
+
+public struct Array<T>
+{
+    private JSValue _value;
+
+    public static explicit operator Array<T>(JSValue value) => new Array<T> { _value = value };
+    public static implicit operator JSValue(Array<T> value) => value._value;
+
+    public static explicit operator Array<T>?(JSValue value)
+        => value.TypeOf() != JSValueType.Undefined ? (Array<T>)value : null;
+    public static implicit operator JSValue(Array<T>? value)
+        => value is Array<T> anyValue ? anyValue._value : JSValue.Undefined;
 }
 
 public struct String
