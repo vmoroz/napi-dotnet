@@ -131,22 +131,44 @@ namespace {namespaceName}
                         bool isWritable = propertySymbol.SetMethod != null;
                         string typeName = propertySymbol.Type.ToDisplayString();
 
-                        nameTable.Add(propertySymbol.Name);
+                        if (propertySymbol.Parameters.Length == 0)
+                        {
+                            nameTable.Add(propertySymbol.Name);
 
-                        source.Append($@"
+                            source.Append($@"
         public {typeName} {propertySymbol.Name}
         {{
             get => ({typeName})_value.GetProperty(NameTable.{propertySymbol.Name});");
 
-                        if (isWritable)
-                        {
-                            source.Append($@"
+                            if (isWritable)
+                            {
+                                source.Append($@"
             set => _value.SetProperty(NameTable.{propertySymbol.Name}, value);");
-                        }
+                            }
 
-                        source.Append(@"
+                            source.Append(@"
         }
 ");
+                        }
+                        else if (propertySymbol.Parameters.Length == 1)
+                        {
+                            string parameterName = propertySymbol.Parameters[0].Name;
+                            string parameterType = propertySymbol.Parameters[0].Type.ToDisplayString();
+                            source.Append($@"
+        public {typeName} this[{parameterType} {parameterName}]
+        {{
+            get => ({typeName})_value.GetProperty({parameterName});");
+
+                            if (isWritable)
+                            {
+                                source.Append($@"
+            set => _value.SetProperty({parameterName}, value);");
+                            }
+
+                            source.Append(@"
+        }
+");
+                        }
                     }
                     else if (member is IMethodSymbol methodSymbol)
                     {

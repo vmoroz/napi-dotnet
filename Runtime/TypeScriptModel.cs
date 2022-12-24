@@ -35,6 +35,10 @@ namespace NodeApi.EcmaScript;
 
 //TODO: We can use tuple types to represent in-place object types. E.g TsObject<(TsString foo, TsOptional<TsString> bar)>
 
+public partial struct PropertyDescriptorMap : IPropertyDescriptorMap<PropertyDescriptorMap>
+{
+}
+
 public partial interface IGlobal<TSelf> : IJSValueHolder<TSelf>
     where TSelf : IGlobal<TSelf>
 {
@@ -107,35 +111,29 @@ public interface IPropertyDescriptor<TSelf> : IJSValueHolder<TSelf>
     Function<Any, Void>? set { get; set; }
 }
 
-public partial struct PropertyDescriptor : IPropertyDescriptor<PropertyDescriptor>
+public partial interface IPropertyDescriptorMap<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IPropertyDescriptorMap<TSelf>
 {
+    PropertyDescriptor this[PropertyKey key] { get; set; }
 }
 
-// interface PropertyDescriptorMap
-public partial struct PropertyDescriptorMap : IJSValueHolder<PropertyDescriptorMap>
+public partial struct PropertyDescriptor : IPropertyDescriptor<PropertyDescriptor>
 {
-    public PropertyDescriptor this[PropertyKey key]
-    {
-        get => (PropertyDescriptor)_value.GetProperty(key);
-        set => _value.SetProperty(key, value);
-    }
 }
 
 public partial struct Nullable<T> : IJSValueHolder<Nullable<T>>
 {
 }
 
-// interface Object
-public partial struct Object : IJSValueHolder<Object>
+public partial interface IObject<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IObject<TSelf>
 {
-    /** The initial value of Object.prototype.constructor is the standard built-in Object constructor. */
-    //constructor: Function;
-    public Function Constructor
-    {
-        get => (Function)_value.GetProperty(NameTable.constructor);
-        set => _value.SetProperty(NameTable.constructor, value);
-    }
+    Function constructor { get; set; }
+}
 
+// interface Object
+public partial struct Object : IObject<Object>
+{
     /** Returns a string representation of an object. */
     // toString(): string;
     public new String ToString()
@@ -685,7 +683,6 @@ public partial struct String : IJSValueHolder<String>
 
 public partial class NameTable
 {
-    public static JSValue constructor => GetStringName(nameof(constructor));
     public static JSValue toLocaleString => GetStringName(nameof(toLocaleString));
     public static JSValue hasOwnProperty => GetStringName(nameof(hasOwnProperty));
     public static JSValue isPrototypeOf => GetStringName(nameof(isPrototypeOf));
