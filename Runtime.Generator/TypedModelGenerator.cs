@@ -129,7 +129,7 @@ namespace {namespaceName}
                     if (member is IPropertySymbol propertySymbol)
                     {
                         bool isWritable = propertySymbol.SetMethod != null;
-                        string typeName = propertySymbol.Type.Name;
+                        string typeName = propertySymbol.Type.ToDisplayString();
 
                         nameTable.Add(propertySymbol.Name);
 
@@ -155,6 +155,8 @@ namespace {namespaceName}
                             continue;
                         }
 
+                        nameTable.Add(methodSymbol.Name);
+
                         string methodText = methodSymbol.DeclaringSyntaxReferences[0].GetSyntax().GetText().ToString();
                         methodText = methodText.Trim();
                         methodText = methodText.Substring(0, methodText.Length - 1);
@@ -168,7 +170,7 @@ namespace {namespaceName}
 
                         source.Append($@"
         public {methodText}
-            => ({returnTypeName})CallMethod(NameTable.{methodSymbol.Name}{args});
+            => ({returnTypeName})_value.CallMethod(NameTable.{methodSymbol.Name}{args});
 ");
                     }
                 }

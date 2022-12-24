@@ -500,6 +500,31 @@ public static partial class JSNativeApi
         return result;
     }
 
+    public static unsafe JSValue Call(this JSValue thisValue, JSValue thisArg, JSValue arg0, JSValue arg1)
+    {
+        Span<napi_value> args = stackalloc napi_value[2];
+        args[0] = (napi_value)arg0;
+        args[1] = (napi_value)arg1;
+        fixed (napi_value* argv = args)
+        {
+            napi_call_function(Env, (napi_value)thisArg, (napi_value)thisValue, (nuint)args.Length, argv, out napi_value result).ThrowIfFailed();
+            return result;
+        }
+    }
+
+    public static unsafe JSValue Call(this JSValue thisValue, JSValue thisArg, JSValue arg0, JSValue arg1, JSValue arg2)
+    {
+        Span<napi_value> args = stackalloc napi_value[3];
+        args[0] = (napi_value)arg0;
+        args[1] = (napi_value)arg1;
+        args[2] = (napi_value)arg2;
+        fixed (napi_value* argv = args)
+        {
+            napi_call_function(Env, (napi_value)thisArg, (napi_value)thisValue, (nuint)args.Length, argv, out napi_value result).ThrowIfFailed();
+            return result;
+        }
+    }
+
     public static unsafe JSValue Call(this JSValue thisValue, JSValue thisArg, params JSValue[] args)
     {
         int argc = args.Length;
@@ -516,7 +541,6 @@ public static partial class JSNativeApi
           (nuint)argc, argv, out napi_value result).ThrowIfFailed();
         return result;
     }
-
 
     public static unsafe JSValue CallAsConstructor(this JSValue thisValue)
     {

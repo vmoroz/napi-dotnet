@@ -42,67 +42,46 @@ public partial interface IGlobal<TSelf> : IJSValueHolder<TSelf>
     Number Infinity { get; set; }
     Any eval(String text);
     Number parseInt(String value, Number? radix = null);
+    Number parseFloat(String value);
+    Boolean isNaN(Number value);
+    Boolean isFinite(Number value);
+    String decodeURI(String value);
+    String decodeURIComponent(String value);
+    String encodeURI(String value);
+    String encodeURIComponent(Union<String, Number, Boolean> value);
 }
 
 public partial struct Global : IGlobal<Global>
 {
-
-
-    // es5.d.ts: declare function parseInt(string: string, radix?: number): number;
-    //public Number ParseInt(String value, Number? radix = null)
-    //    => (Number)CallMethod(NameTable.parseInt, value, radix);
-
-    // es5.d.ts: declare function parseFloat(string: string): number;
-    public Number ParseFloat(String value)
-        => (Number)CallMethod(NameTable.parseFloat, value);
-
-    // es5.d.ts: declare function isNaN(number: number): boolean;
-    public Boolean IsNaN(Number value)
-        => (Boolean)CallMethod(NameTable.isNaN, value);
-
-    // es5.d.ts: declare function isFinite(number: number): boolean;
-    public Boolean IsFinite(Number value)
-        => (Boolean)CallMethod(NameTable.isFinite, value);
-
-    // es5.d.ts: declare function decodeURI(encodedURI: string): string;
-    public String DecodeURI(String value)
-        => (String)CallMethod(NameTable.decodeURI, value);
-
-    // es5.d.ts: declare function decodeURIComponent(encodedURIComponent: string): string;
-    public String DecodeURIComponent(String value)
-        => (String)CallMethod(NameTable.decodeURIComponent, value);
-
-    // es5.d.ts: declare function encodeURI(uri: string): string;
-    public String EncodeURI(String value)
-        => (String)CallMethod(NameTable.encodeURI, value);
-
-    // es5.d.ts: declare function encodeURIComponent(uriComponent: string | number | boolean): string;
-    public String EncodeURIComponent(Union<String, Number, Boolean> value)
-        => (String)CallMethod(NameTable.encodeURIComponent, value);
-
-    // es5.d.ts: deprecated: declare function escape(string: string): string;
-    // es5.d.ts: deprecated: declare function unescape(string: string): string;
-
-    private JSValue CallMethod(JSValue name, params JSValue[] args)
-        => _value.GetProperty(name).Call(_value, args);
 }
 
-public static class Ext
+public static class ExtensionMethods
 {
+    public static JSValue CallMethod(this JSValue thisValue, JSValue name)
+        => thisValue.GetProperty(name).Call(thisValue);
+
+    public static JSValue CallMethod(this JSValue thisValue, JSValue name, JSValue arg0)
+        => thisValue.GetProperty(name).Call(thisValue, arg0);
+
+    public static JSValue CallMethod(this JSValue thisValue, JSValue name, JSValue arg0, JSValue arg1)
+        => thisValue.GetProperty(name).Call(thisValue, arg0, arg1);
+
+    public static JSValue CallMethod(this JSValue thisValue, JSValue name, JSValue arg0, JSValue arg1, JSValue arg2)
+        => thisValue.GetProperty(name).Call(thisValue, arg0, arg1, arg2);
+
     public static JSValue CallMethod(this JSValue thisValue, JSValue name, params JSValue[] args)
         => thisValue.GetProperty(name).Call(thisValue, args);
 }
 
-// es5.d.ts: interface Symbol
-public partial struct Symbol : IJSValueHolder<Symbol>
+public partial interface ISymbol<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, ISymbol<TSelf>
 {
-    // toString(): string;
-    public new String ToString()
-        => (String)_value.CallMethod(NameTable.toString);
+    String toString();
+    Symbol valueOf();
+}
 
-    // valueOf(): symbol;
-    public Symbol ValueOf()
-        => (Symbol)_value.CallMethod(NameTable.valueOf);
+public partial struct Symbol : ISymbol<Symbol>
+{
 }
 
 // declare type PropertyKey = string | number | symbol;
@@ -117,50 +96,19 @@ public partial struct PropertyKey : IJSValueHolder<PropertyKey>
     public static explicit operator Symbol(PropertyKey value) => (Symbol)value._value;
 }
 
-// interface PropertyDescriptor
-public partial struct PropertyDescriptor : IJSValueHolder<PropertyDescriptor>
+public interface IPropertyDescriptor<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IPropertyDescriptor<TSelf>
 {
-    //configurable?: boolean;
-    public Boolean? Configurable
-    {
-        get => (Boolean?)_value.GetProperty(NameTable.configurable);
-        set => _value.SetProperty(NameTable.configurable, value);
-    }
+    Boolean? configurable { get; set; }
+    Boolean? enumerable { get; set; }
+    Boolean? writable { get; set; }
+    Any? value { get; set; }
+    Function<Any>? get { get; set; }
+    Function<Any, Void>? set { get; set; }
+}
 
-    //enumerable?: boolean;
-    public Boolean? Enumerable
-    {
-        get => (Boolean?)_value.GetProperty(NameTable.enumerable);
-        set => _value.SetProperty(NameTable.enumerable, value);
-    }
-
-    //value?: any;
-    public Any? Value
-    {
-        get => (Any?)_value.GetProperty(NameTable.enumerable);
-        set => _value.SetProperty(NameTable.enumerable, value);
-    }
-
-    //writable?: boolean;
-    public Boolean? Writable
-    {
-        get => (Boolean?)_value.GetProperty(NameTable.writable);
-        set => _value.SetProperty(NameTable.writable, value);
-    }
-
-    //get? (): any;
-    public Function<Any>? Get
-    {
-        get => (Function<Any>?)_value.GetProperty(NameTable.get);
-        set => _value.SetProperty(NameTable.get, value);
-    }
-
-    //set? (v: any): void;
-    public Function<Any, Void>? Set
-    {
-        get => (Function<Any, Void>?)_value.GetProperty(NameTable.set);
-        set => _value.SetProperty(NameTable.set, value);
-    }
+public partial struct PropertyDescriptor : IPropertyDescriptor<PropertyDescriptor>
+{
 }
 
 // interface PropertyDescriptorMap
@@ -737,23 +685,6 @@ public partial struct String : IJSValueHolder<String>
 
 public partial class NameTable
 {
-    public static JSValue eval => GetStringName(nameof(eval));
-    public static JSValue parseInt => GetStringName(nameof(parseInt));
-    public static JSValue parseFloat => GetStringName(nameof(parseFloat));
-    public static JSValue isNaN => GetStringName(nameof(isNaN));
-    public static JSValue isFinite => GetStringName(nameof(isFinite));
-    public static JSValue decodeURI => GetStringName(nameof(decodeURI));
-    public static JSValue decodeURIComponent => GetStringName(nameof(decodeURIComponent));
-    public static JSValue encodeURI => GetStringName(nameof(encodeURI));
-    public static JSValue encodeURIComponent => GetStringName(nameof(encodeURIComponent));
-    public static JSValue toString => GetStringName(nameof(toString));
-    public static JSValue valueOf => GetStringName(nameof(valueOf));
-    public static JSValue configurable => GetStringName(nameof(configurable));
-    public static JSValue enumerable => GetStringName(nameof(enumerable));
-    public static JSValue value => GetStringName(nameof(value));
-    public static JSValue writable => GetStringName(nameof(writable));
-    public static JSValue get => GetStringName(nameof(get));
-    public static JSValue set => GetStringName(nameof(set));
     public static JSValue constructor => GetStringName(nameof(constructor));
     public static JSValue toLocaleString => GetStringName(nameof(toLocaleString));
     public static JSValue hasOwnProperty => GetStringName(nameof(hasOwnProperty));
