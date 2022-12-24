@@ -183,17 +183,32 @@ namespace {namespaceName}
                         methodText = methodText.Trim();
                         methodText = methodText.Substring(0, methodText.Length - 1);
                         string returnTypeName = methodSymbol.ReturnType.ToDisplayString();
-                        StringBuilder args = new StringBuilder();
-                        foreach (var parameter in methodSymbol.Parameters)
+                        if (methodSymbol.Name == "New")
                         {
-                            args.Append(", ");
-                            args.Append(parameter.Name);
+                            string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
+                            source.Append($@"
+        public {methodText}
+            => ({returnTypeName})_value.CallAsConstructor({args});
+");
                         }
-
-                        source.Append($@"
+                        else if (methodSymbol.Name == "Call")
+                        {
+                            string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
+                            args = args.Length > 0 ? ", " + args : "";
+                            source.Append($@"
+        public {methodText}
+            => ({returnTypeName})_value.Call(_value{args});
+");
+                        }
+                        else
+                        {
+                            string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
+                            args = args.Length > 0 ? ", " + args : "";
+                            source.Append($@"
         public {methodText}
             => ({returnTypeName})_value.CallMethod(NameTable.{methodSymbol.Name}{args});
 ");
+                        }
                     }
                 }
             }

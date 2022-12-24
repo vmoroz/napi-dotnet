@@ -129,49 +129,17 @@ public partial interface IObject<TSelf> : IJSValueHolder<TSelf>
     where TSelf : struct, IObject<TSelf>
 {
     Function constructor { get; set; }
+    String toString();
+    String toLocaleString();
+    Object valueOf();
+    Boolean hasOwnProperty(PropertyKey key);
+    Boolean isPrototypeOf(Object value);
+    Boolean propertyIsEnumerable(PropertyKey key);
 }
 
 // interface Object
 public partial struct Object : IObject<Object>
 {
-    /** Returns a string representation of an object. */
-    // toString(): string;
-    public new String ToString()
-        => (String)_value.CallMethod(NameTable.toString);
-
-    /** Returns a date converted to a string using the current locale. */
-    // toLocaleString(): string;
-    public String ToLocaleString()
-        => (String)_value.CallMethod(NameTable.toLocaleString);
-
-    /** Returns the primitive value of the specified object. */
-    // valueOf(): Object;
-    public Object ValueOf()
-        => (Object)_value.CallMethod(NameTable.valueOf);
-
-    /**
-     * Determines whether an object has a property with the specified name.
-     * @param v A property name.
-     */
-    // hasOwnProperty(v: PropertyKey): boolean;
-    public Boolean HasOwnProperty()
-        => (Boolean)_value.CallMethod(NameTable.hasOwnProperty);
-
-    /**
-     * Determines whether an object exists in another object's prototype chain.
-     * @param v Another object whose prototype chain is to be checked.
-     */
-    // isPrototypeOf(v: Object): boolean;
-    public Boolean IsPrototypeOf(Object value)
-        => (Boolean)_value.CallMethod(NameTable.isPrototypeOf, value);
-
-    /**
-     * Determines whether a specified property is enumerable.
-     * @param v A property name.
-     */
-    // propertyIsEnumerable(v: PropertyKey): boolean;
-    public Boolean PropertyIsEnumerable(PropertyKey key)
-        => (Boolean)_value.CallMethod(NameTable.propertyIsEnumerable, key);
 }
 
 public partial struct Global
@@ -206,42 +174,19 @@ public interface IFunction<TSelf> : IJSValueHolder<TSelf>
 {
 }
 
-public partial struct ObjectConstructor : IJSValueHolder<ObjectConstructor>
+public partial interface IObjectConstructor<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IObjectConstructor<TSelf>
 {
-    // new(value?: any): Object;
-    public Object New(Any? value) =>
-        (Object)Global.Instance.Object._value.CallAsConstructor(value);
+    Object New(Any? value);
+    Any Call();
+    Any Call(Any value);
+    Object prototype { get; }
+    Any getPrototypeOf(Any obj);
+    PropertyDescriptor? getOwnPropertyDescriptor(Any obj, PropertyKey key);
+}
 
-    // (): any;
-    public Any Call() =>
-        (Any)Global.Instance.Object._value.Call();
-
-    // (value: any): any;
-    public Any Call(Any value) =>
-        (Any)Global.Instance.Object._value.Call(value);
-
-    /** A reference to the prototype for a class of objects. */
-    // readonly prototype: Object;
-    public Object Prototype => (Object)_value.GetProperty(NameTable.prototype);
-
-    /**
-     * Returns the prototype of an object.
-     * @param o The object that references the prototype.
-     */
-    // getPrototypeOf(o: any): any;
-    public Any PropertyIsEnumerable(Any value)
-        => (Any)_value.CallMethod(NameTable.getPrototypeOf, value);
-
-    /**
-     * Gets the own property descriptor of the specified object.
-     * An own property descriptor is one that is defined directly on the object and is not inherited from the object's prototype.
-     * @param o Object that contains the property.
-     * @param p Name of the property.
-     */
-    // getOwnPropertyDescriptor(o: any, p: PropertyKey): PropertyDescriptor | undefined;
-    public PropertyDescriptor? GetOwnPropertyDescriptor(Any value, PropertyKey key)
-        => (PropertyDescriptor?)_value.CallMethod(NameTable.getOwnPropertyDescriptor, value, key);
-
+public partial struct ObjectConstructor : IObjectConstructor<ObjectConstructor>
+{
     /**
      * Returns the names of the own properties of an object. The own properties of an object are those that are defined directly
      * on that object, and are not inherited from the object's prototype. The properties of an object include both fields (objects) and functions.
@@ -360,44 +305,11 @@ public partial struct ObjectConstructor : IJSValueHolder<ObjectConstructor>
         => (Array<String>)_value.CallMethod(NameTable.keys, value);
 }
 
-/**
- * Represents a raw buffer of binary data, which is used to store data for the
- * different typed arrays. ArrayBuffers cannot be read from or written to directly,
- * but can be passed to a typed array or DataView Object to interpret the raw
- * buffer as needed.
- */
-// interface ArrayBuffer
-public partial struct ArrayBuffer : IJSValueHolder<ArrayBuffer>
+public partial interface IGlobal<TSelf>
 {
-    /**
-     * Read-only. The length of the ArrayBuffer (in bytes).
-     */
-    //readonly byteLength: number;
-    public Number ByteLength => (Number)_value.GetProperty(NameTable.byteLength);
-
-
-    /**
-     * Returns a section of an ArrayBuffer.
-     */
-    //slice(begin: number, end?: number): ArrayBuffer;
-    public ArrayBuffer Slice(Number begin, Number? end = null)
-        => (ArrayBuffer)_value.CallMethod(NameTable.slice, begin, end);
+    ObjectConstructor Object { get; set; }
 }
 
-public partial struct Global
-{
-    /**
-     * Provides functionality common to all JavaScript objects.
-     */
-    // declare var Object: ObjectConstructor;
-    public ObjectConstructor Object
-    {
-        get => (ObjectConstructor)_value.GetProperty(NameTable.Object);
-        set => _value.SetProperty(NameTable.Object, value);
-    }
-}
-
-//interface String
 public partial interface IString<TSelf> : IJSValueHolder<TSelf>
     where TSelf : IString<TSelf>
 {
@@ -680,16 +592,33 @@ public partial struct String : IJSValueHolder<String>
 // */
 //declare var String: StringConstructor;
 
+/**
+ * Represents a raw buffer of binary data, which is used to store data for the
+ * different typed arrays. ArrayBuffers cannot be read from or written to directly,
+ * but can be passed to a typed array or DataView Object to interpret the raw
+ * buffer as needed.
+ */
+// interface ArrayBuffer
+public partial struct ArrayBuffer : IJSValueHolder<ArrayBuffer>
+{
+    /**
+     * Read-only. The length of the ArrayBuffer (in bytes).
+     */
+    //readonly byteLength: number;
+    public Number ByteLength => (Number)_value.GetProperty(NameTable.byteLength);
+
+
+    /**
+     * Returns a section of an ArrayBuffer.
+     */
+    //slice(begin: number, end?: number): ArrayBuffer;
+    public ArrayBuffer Slice(Number begin, Number? end = null)
+        => (ArrayBuffer)_value.CallMethod(NameTable.slice, begin, end);
+}
+
 
 public partial class NameTable
 {
-    public static JSValue toLocaleString => GetStringName(nameof(toLocaleString));
-    public static JSValue hasOwnProperty => GetStringName(nameof(hasOwnProperty));
-    public static JSValue isPrototypeOf => GetStringName(nameof(isPrototypeOf));
-    public static JSValue propertyIsEnumerable => GetStringName(nameof(propertyIsEnumerable));
-    public static JSValue prototype => GetStringName(nameof(prototype));
-    public static JSValue getPrototypeOf => GetStringName(nameof(getPrototypeOf));
-    public static JSValue getOwnPropertyDescriptor => GetStringName(nameof(getOwnPropertyDescriptor));
     public static JSValue getOwnPropertyNames => GetStringName(nameof(getOwnPropertyNames));
     public static JSValue create => GetStringName(nameof(create));
     public static JSValue defineProperty => GetStringName(nameof(defineProperty));
@@ -701,7 +630,6 @@ public partial class NameTable
     public static JSValue isFrozen => GetStringName(nameof(isFrozen));
     public static JSValue isExtensible => GetStringName(nameof(isExtensible));
     public static JSValue keys => GetStringName(nameof(keys));
-    public static JSValue Object => GetStringName(nameof(Object));
     public static JSValue byteLength => GetStringName(nameof(byteLength));
     public static JSValue slice => GetStringName(nameof(slice));
     public static JSValue charAt => GetStringName(nameof(charAt));
