@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -50,20 +52,31 @@ namespace AutoGenerate
             // get the added attribute, and INotifyPropertyChanged
             INamedTypeSymbol attributeSymbol = context.Compilation.GetTypeByMetadataName("AutoGenerate.AutoGenerateAttribute")
                 ?? throw new Exception("Attribute symbol not found");
+            INamedTypeSymbol nullableSymbol = context.Compilation.GetTypeByMetadataName("System.Nullable")
+                ?? throw new Exception("Attribute symbol not found");
 
+            HashSet<string> nameTable = new HashSet<string>();
             HashSet<string> uniqueFileNames = new HashSet<string>();
             // group the fields by class, and generate the source
             foreach (INamedTypeSymbol structSymbol in receiver.Structs)
             {
-                (string structSource, string fileName) = ProcessStruct(structSymbol, uniqueFileNames, context);
+                (string structSource, string fileName) = ProcessStruct(structSymbol, uniqueFileNames, nameTable, context, nullableSymbol);
                 if (!string.IsNullOrEmpty(fileName))
                 {
                     context.AddSource($"{fileName}AutoGen.g.cs", SourceText.From(structSource, Encoding.UTF8));
                 }
             }
+
+            string source = ProcessNameTable(nameTable);
+            context.AddSource($"NameTable_AutoGen.g.cs", SourceText.From(source, Encoding.UTF8));
         }
 
-        private (string structSource, string fileName) ProcessStruct(INamedTypeSymbol structSymbol, HashSet<string> uniqueFileNames, GeneratorExecutionContext context)
+        private (string structSource, string fileName) ProcessStruct(
+            INamedTypeSymbol structSymbol,
+            HashSet<string> uniqueFileNames,
+            HashSet<string> nameTable,
+            GeneratorExecutionContext context,
+            INamedTypeSymbol nullableSymbol)
         {
             if (!structSymbol.ContainingSymbol.Equals(structSymbol.ContainingNamespace, SymbolEqualityComparer.Default))
             {
@@ -102,11 +115,97 @@ namespace {namespaceName}
             => value.TypeOf() != JSValueType.Undefined ? ({structName})value : null;
         public static implicit operator JSValue({structName}? value)
             => value is {structName} notNullValue ? notNullValue._value : JSValue.Undefined;
-    }}
-}}
+");
+
+            foreach (var interfaceSymbol in structSymbol.AllInterfaces)
+            {
+                if (interfaceSymbol.Name == NameTable.IJSValueHolder.Text)
+                {
+                    continue;
+                }
+
+                foreach (var member in interfaceSymbol.GetMembers())
+                {
+                    if (member is IPropertySymbol propertySymbol)
+                    {
+                        bool isWritable = propertySymbol.SetMethod != null;
+                        string typeName = propertySymbol.Type.Name;
+
+                        nameTable.Add(propertySymbol.Name);
+
+                        source.Append($@"
+        public {typeName} {propertySymbol.Name}
+        {{
+            get => ({typeName})_value.GetProperty(NameTable.{propertySymbol.Name});");
+
+                        if (isWritable)
+                        {
+                            source.Append($@"
+            set => _value.SetProperty(NameTable.{propertySymbol.Name}, value);");
+                        }
+
+                        source.Append(@"
+        }
+");
+                    }
+                    else if (member is IMethodSymbol methodSymbol)
+                    {
+                        if (methodSymbol.MethodKind != MethodKind.Ordinary)
+                        {
+                            continue;
+                        }
+
+                        string methodText = methodSymbol.DeclaringSyntaxReferences[0].GetSyntax().GetText().ToString();
+                        methodText = methodText.Trim();
+                        methodText = methodText.Substring(0, methodText.Length - 1);
+                        string returnTypeName = methodSymbol.ReturnType.ToDisplayString();
+                        StringBuilder args = new StringBuilder();
+                        foreach (var parameter in methodSymbol.Parameters)
+                        {
+                            args.Append(", ");
+                            args.Append(parameter.Name);
+                        }
+
+                        source.Append($@"
+        public {methodText}
+            => ({returnTypeName})CallMethod(NameTable.{methodSymbol.Name}{args});
+");
+                    }
+                }
+            }
+
+            source.Append(@"
+    }
+}
 ");
 
             return (source.ToString(), fileName);
+        }
+
+        private string ProcessNameTable(HashSet<string> nameTable)
+        {
+            List<string> sortedNames = nameTable.ToList();
+            sortedNames.Sort();
+
+            // begin building the generated source
+            StringBuilder source = new StringBuilder(@"
+namespace NodeApi.EcmaScript
+{
+    public partial class NameTable
+    {");
+
+            foreach (var name in sortedNames)
+            {
+                source.Append($@"
+        public static JSValue {name} => GetStringName(nameof({name}));");
+            }
+
+            source.Append(@"
+    }
+}
+");
+
+            return source.ToString();
         }
 
         /// <summary>

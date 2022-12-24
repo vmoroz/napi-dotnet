@@ -1,6 +1,3 @@
-using System;
-using System.Runtime.CompilerServices;
-
 namespace NodeApi.EcmaScript;
 
 // ECMAScript APIs as they defined in
@@ -38,29 +35,22 @@ namespace NodeApi.EcmaScript;
 
 //TODO: We can use tuple types to represent in-place object types. E.g TsObject<(TsString foo, TsOptional<TsString> bar)>
 
-public partial struct Global : IJSValueHolder<Global>
+public partial interface IGlobal<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : IGlobal<TSelf>
 {
-    // es5.d.ts: declare var NaN: number;
-    public Number NaN
-    {
-        get => (Number)_value.GetProperty(NameTable.NaN);
-        set => _value.SetProperty(NameTable.NaN, value);
-    }
+    Number NaN { get; set; }
+    Number Infinity { get; set; }
+    Any eval(String text);
+    Number parseInt(String value, Number? radix = null);
+}
 
-    // es5.d.ts: declare var Infinity: number;
-    public Number Infinity
-    {
-        get => (Number)_value.GetProperty(NameTable.Infinity);
-        set => _value.SetProperty(NameTable.Infinity, value);
-    }
+public partial struct Global : IGlobal<Global>
+{
 
-    // es5.d.ts: declare function eval(x: string): any;
-    public Any Eval(String value)
-        => (Any)CallMethod(NameTable.eval, value);
 
     // es5.d.ts: declare function parseInt(string: string, radix?: number): number;
-    public Number ParseInt(String value, Number? radix = null)
-        => (Number)CallMethod(NameTable.parseInt, value, radix);
+    //public Number ParseInt(String value, Number? radix = null)
+    //    => (Number)CallMethod(NameTable.parseInt, value, radix);
 
     // es5.d.ts: declare function parseFloat(string: string): number;
     public Number ParseFloat(String value)
@@ -248,7 +238,7 @@ public partial struct Global
  */
 // interface ThisType<T> { }
 public partial struct ThisType<T> : IJSValueHolder<ThisType<T>>
-{ 
+{
 }
 
 public partial struct Intersect<T1, T2> : IJSValueHolder<Intersect<T1, T2>>
@@ -628,7 +618,7 @@ public partial struct String : IJSValueHolder<String>
     //     * @param strings The strings to append to the end of the string.
     //     */
     // concat(...strings: string[]): string;
-//    public String concat(params String[] strings);
+    //    public String concat(params String[] strings);
 
     // /**
     //  * Returns the position of the first occurrence of a substring.
@@ -745,10 +735,8 @@ public partial struct String : IJSValueHolder<String>
 //declare var String: StringConstructor;
 
 
-public class NameTable
+public partial class NameTable
 {
-    public static JSValue NaN => GetStringName(nameof(NaN));
-    public static JSValue Infinity => GetStringName(nameof(Infinity));
     public static JSValue eval => GetStringName(nameof(eval));
     public static JSValue parseInt => GetStringName(nameof(parseInt));
     public static JSValue parseFloat => GetStringName(nameof(parseFloat));
