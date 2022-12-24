@@ -247,17 +247,23 @@ public partial struct String : IString<String>
 {
 }
 
-//interface StringConstructor {
-//    new(value?: any): String;
-//    (value?: any): string;
-//    readonly prototype: String;
-//    fromCharCode(...codes: number[]): string;
-//}
+public partial interface IStringConstructor<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IStringConstructor<TSelf>
+{
+    String New(Any? value = null);
+    String Call(Any? value = null);
+    String prototype { get; }
+    String fromCharCode(params Number[] codes);
+}
 
-///**
-// * Allows manipulation and formatting of text strings and determination and location of substrings within strings.
-// */
-//declare var String: StringConstructor;
+public partial struct StringConstructor : IStringConstructor<StringConstructor>
+{
+}
+
+public partial interface IGlobal<TSelf>
+{
+    StringConstructor String { get; set; }
+}
 
 /**
  * Represents a raw buffer of binary data, which is used to store data for the
@@ -287,8 +293,6 @@ public partial struct ArrayBuffer : IJSValueHolder<ArrayBuffer>
 public partial class NameTable
 {
     public static JSValue byteLength => GetStringName(nameof(byteLength));
-
-    public static JSValue fromCharCode => GetStringName(nameof(fromCharCode));
 
     // TODO: Implement
     public static JSValue GetStringName(string value) => JSValue.Null;
