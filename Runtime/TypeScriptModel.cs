@@ -1,17 +1,45 @@
 using System;
+using System.Runtime.CompilerServices;
 
 namespace NodeApi.EcmaScript;
 
 // ECMAScript APIs as they defined in
 // https://github.com/microsoft/TypeScript/blob/main/src/lib/es5.d.ts
 
-public partial struct Global
+//TODO: type aliases
+//TODO: interfaces
+//TODO: type assertions
+//TODO: literal types
+//TODO: as const - converts to literals
+//TODO: Non-null (postfix !) - can we use C# Nullable?
+//TODO: Enums
+//TODO: Narrowing
+//TODO:   typeof -> "string" "number" "bigint" "boolean" "symbol" "undefined" "object" "function" (where is null? typeof null is actually "object")
+//TODO:   Truthiness
+//TODO:   Equality Narrowing
+//TODO:   The in operator narrowing
+//TODO:   instanceof narrowing
+//TODO:   type predicates
+//TODO:   Discriminated unions
+//TODO:   the never type
+//TODO: Function Call Signatures
+//TODO: Function Construct Signatures
+//TODO: Generic Functions
+//TODO: Generic constraints
+//TODO: Can we use anonymous types for in-place type definitions?
+//TODO: Functions with variable parameters
+//TODO: Can we adopt C# delegate types?
+//TODO: Function overloads
+//TODO: Special types: void, object, unknown, never . Functions are objects
+//TODO: Special type: Function - it is like any that can always be called
+//TODO: Rest Parameters, Rest arguments
+//TODO: Parameter Destructuring
+//TODO: Function void return type means that it can return anything, but it is ignored
+
+//TODO: We can use tuple types to represent in-place object types. E.g TsObject<(TsString foo, TsOptional<TsString> bar)>
+
+public partial struct Global : IJSValueHolder<Global>
 {
-    private JSValue _value;
-
-    public static explicit operator Global(JSValue value) => new Global { _value = value };
-    public static implicit operator JSValue(Global value) => value._value;
-
     // es5.d.ts: declare var NaN: number;
     public Number NaN
     {
@@ -76,13 +104,8 @@ public static class Ext
 }
 
 // es5.d.ts: interface Symbol
-public partial struct Symbol
+public partial struct Symbol : IJSValueHolder<Symbol>
 {
-    private JSValue _value;
-
-    public static explicit operator Symbol(JSValue value) => new Symbol { _value = value };
-    public static implicit operator JSValue(Symbol value) => value._value;
-
     // toString(): string;
     public new String ToString()
         => (String)_value.CallMethod(NameTable.toString);
@@ -93,13 +116,8 @@ public partial struct Symbol
 }
 
 // declare type PropertyKey = string | number | symbol;
-public struct PropertyKey
+public partial struct PropertyKey : IJSValueHolder<PropertyKey>
 {
-    private JSValue _value;
-
-    public static explicit operator PropertyKey(JSValue value) => new PropertyKey { _value = value };
-    public static implicit operator JSValue(PropertyKey value) => value._value;
-
     public static implicit operator PropertyKey(String value) => new PropertyKey { _value = (JSValue)value };
     public static implicit operator PropertyKey(Number value) => new PropertyKey { _value = (JSValue)value };
     public static implicit operator PropertyKey(Symbol value) => new PropertyKey { _value = (JSValue)value };
@@ -110,13 +128,8 @@ public struct PropertyKey
 }
 
 // interface PropertyDescriptor
-public struct PropertyDescriptor
+public partial struct PropertyDescriptor : IJSValueHolder<PropertyDescriptor>
 {
-    private JSValue _value;
-
-    public static explicit operator PropertyDescriptor(JSValue value) => new PropertyDescriptor { _value = value };
-    public static implicit operator JSValue(PropertyDescriptor value) => value._value;
-
     public static explicit operator PropertyDescriptor?(JSValue value)
         => value.TypeOf() == JSValueType.Object ? (PropertyDescriptor)value : null;
 
@@ -165,13 +178,8 @@ public struct PropertyDescriptor
 }
 
 // interface PropertyDescriptorMap
-public struct PropertyDescriptorMap
+public partial struct PropertyDescriptorMap : IJSValueHolder<PropertyDescriptorMap>
 {
-    private JSValue _value;
-
-    public static explicit operator PropertyDescriptorMap(JSValue value) => new PropertyDescriptorMap { _value = value };
-    public static implicit operator JSValue(PropertyDescriptorMap value) => value._value;
-
     public PropertyDescriptor this[PropertyKey key]
     {
         get => (PropertyDescriptor)_value.GetProperty(key);
@@ -179,22 +187,13 @@ public struct PropertyDescriptorMap
     }
 }
 
-public struct Nullable<T>
+public partial struct Nullable<T> : IJSValueHolder<Nullable<T>>
 {
-    private JSValue _value;
-
-    public static explicit operator Nullable<T>(JSValue value) => new Nullable<T> { _value = value };
-    public static implicit operator JSValue(Nullable<T> value) => value._value;
 }
 
 // interface Object
-public struct Object
+public partial struct Object : IJSValueHolder<Object>
 {
-    private JSValue _value;
-
-    public static explicit operator Object(JSValue value) => new Object { _value = value };
-    public static implicit operator JSValue(Object value) => value._value;
-
     /** The initial value of Object.prototype.constructor is the standard built-in Object constructor. */
     //constructor: Function;
     public Function Constructor
@@ -252,28 +251,16 @@ public partial struct Global
  * Marker for contextual 'this' type
  */
 // interface ThisType<T> { }
-public struct ThisType<T>
-{
-    private JSValue _value;
-
-    public static explicit operator ThisType<T>(JSValue value) => new ThisType<T> { _value = value };
-    public static implicit operator JSValue(ThisType<T> value) => value._value;
+public partial struct ThisType<T> : IJSValueHolder<ThisType<T>>
+{ 
 }
 
-public struct Intersect<T1, T2>
+public partial struct Intersect<T1, T2> : IJSValueHolder<Intersect<T1, T2>>
 {
-    private JSValue _value;
-
-    public static explicit operator Intersect<T1, T2>(JSValue value) => new Intersect<T1, T2> { _value = value };
-    public static implicit operator JSValue(Intersect<T1, T2> value) => value._value;
 }
 
-public struct Readonly<T> : IJSValueHolder<Readonly<T>>
+public partial struct Readonly<T> : IJSValueHolder<Readonly<T>>
 {
-    private JSValue _value;
-
-    public static explicit operator Readonly<T>(JSValue value) => new Readonly<T> { _value = value };
-    public static implicit operator JSValue(Readonly<T> value) => value._value;
 }
 
 public interface IJSValueHolder<TSelf> where TSelf : IJSValueHolder<TSelf>
@@ -287,13 +274,8 @@ public interface IFunction<TSelf> : IJSValueHolder<TSelf>
 {
 }
 
-public struct ObjectConstructor
+public partial struct ObjectConstructor : IJSValueHolder<ObjectConstructor>
 {
-    private JSValue _value;
-
-    public static explicit operator ObjectConstructor(JSValue value) => new ObjectConstructor { _value = value };
-    public static implicit operator JSValue(ObjectConstructor value) => value._value;
-
     // new(value?: any): Object;
     public Object New(Any? value) =>
         (Object)Global.Instance.Object._value.CallAsConstructor(value);
@@ -453,13 +435,8 @@ public struct ObjectConstructor
  * buffer as needed.
  */
 // interface ArrayBuffer
-public struct ArrayBuffer : IJSValueHolder<ArrayBuffer>
+public partial struct ArrayBuffer : IJSValueHolder<ArrayBuffer>
 {
-    private JSValue _value;
-
-    public static explicit operator ArrayBuffer(JSValue value) => new ArrayBuffer { _value = value };
-    public static implicit operator JSValue(ArrayBuffer value) => value._value;
-
     /**
      * Read-only. The length of the ArrayBuffer (in bytes).
      */
@@ -627,7 +604,7 @@ public partial interface IString<TSelf> : IJSValueHolder<TSelf>
     String this[Number index] { get; }
 }
 
-public partial struct String
+public partial struct String : IJSValueHolder<String>
 {
     /** Returns a string representation of a string. */
     // toString(): string;
@@ -840,263 +817,64 @@ public class NameTable
     public static JSValue GetStringName(string value) => JSValue.Null;
 }
 
-public struct Union<T1, T2> : IJSValueHolder<Union<T1, T2>>
+public partial struct Union<T1, T2> : IJSValueHolder<Union<T1, T2>>
 {
-    private JSValue _value;
-
-    public static explicit operator Union<T1, T2>(JSValue value) => new Union<T1, T2> { _value = value };
-    public static implicit operator JSValue(Union<T1, T2> value) => value._value;
 }
 
-public struct Union<T1, T2, T3> : IJSValueHolder<Union<T1, T2, T3>>
+public partial struct Union<T1, T2, T3> : IJSValueHolder<Union<T1, T2, T3>>
 {
-    private JSValue _value;
-
-    public static explicit operator Union<T1, T2, T3>(JSValue value) => new Union<T1, T2, T3> { _value = value };
-    public static implicit operator JSValue(Union<T1, T2, T3> value) => value._value;
 }
 
-public struct Boolean
+public partial struct Boolean : IJSValueHolder<Boolean>
 {
-    private JSValue _value;
-
-    public static explicit operator Boolean(JSValue value) => new Boolean { _value = value };
-    public static implicit operator JSValue(Boolean value) => value._value;
-
     public static implicit operator JSValue(Boolean? value)
         => value is Boolean boolValue ? boolValue._value : JSValue.Undefined;
 }
 
-public struct Number
+public partial struct Number : IJSValueHolder<Number>
 {
-    private JSValue _value;
-
-    public static explicit operator Number(JSValue value) => new Number { _value = value };
-    public static implicit operator JSValue(Number value) => value._value;
-
     public static explicit operator Number?(JSValue value)
         => value.TypeOf() == JSValueType.Number ? (Number)value : null;
     public static implicit operator JSValue(Number? value)
         => value is Number numberValue ? numberValue._value : JSValue.Undefined;
 }
 
-public struct Function : IFunction<Function>
+public partial struct Function : IFunction<Function>
 {
-    private JSValue _value;
-
-    public static explicit operator Function(JSValue value) => new Function { _value = value };
-    public static implicit operator JSValue(Function value) => value._value;
 }
 
-public struct Function<TResult> : IFunction<Function<TResult>>
+public partial struct Function<TResult> : IFunction<Function<TResult>>
 {
-    private JSValue _value;
-
-    public static explicit operator Function<TResult>(JSValue value) => new Function<TResult> { _value = value };
-    public static implicit operator JSValue(Function<TResult> value) => value._value;
-
     public static explicit operator Function<TResult>?(JSValue value)
         => value.TypeOf() == JSValueType.Number ? (Function<TResult>)value : null;
     public static implicit operator JSValue(Function<TResult>? value)
         => value is Function<TResult> functionValue ? functionValue._value : JSValue.Undefined;
 }
 
-public struct Function<TArg1, TResult> : IFunction<Function<TArg1, TResult>>
+public partial struct Function<TArg1, TResult> : IFunction<Function<TArg1, TResult>>
 {
-    private JSValue _value;
-
-    public static explicit operator Function<TArg1, TResult>(JSValue value) => new Function<TArg1, TResult> { _value = value };
-    public static implicit operator JSValue(Function<TArg1, TResult> value) => value._value;
-
     public static explicit operator Function<TArg1, TResult>?(JSValue value)
         => value.TypeOf() == JSValueType.Number ? (Function<TArg1, TResult>)value : null;
     public static implicit operator JSValue(Function<TArg1, TResult>? value)
         => value is Function<TArg1, TResult> functionValue ? functionValue._value : JSValue.Undefined;
 }
 
-public struct Void
+public partial struct Void : IJSValueHolder<Void>
 {
-    private JSValue _value;
-
-    public static explicit operator Void(JSValue value) => new Void { _value = value };
-    public static implicit operator JSValue(Void value) => value._value;
 }
 
-public struct Any
+public partial struct Any : IJSValueHolder<Any>
 {
-    private JSValue _value;
-
-    public static explicit operator Any(JSValue value) => new Any { _value = value };
-    public static implicit operator JSValue(Any value) => value._value;
-
     public static explicit operator Any?(JSValue value)
         => value.TypeOf() != JSValueType.Undefined ? (Any)value : null;
     public static implicit operator JSValue(Any? value)
         => value is Any anyValue ? anyValue._value : JSValue.Undefined;
 }
 
-public struct Array<T>
+public partial struct Array<T> : IJSValueHolder<Array<T>>
 {
-    private JSValue _value;
-
-    public static explicit operator Array<T>(JSValue value) => new Array<T> { _value = value };
-    public static implicit operator JSValue(Array<T> value) => value._value;
-
     public static explicit operator Array<T>?(JSValue value)
         => value.TypeOf() != JSValueType.Undefined ? (Array<T>)value : null;
     public static implicit operator JSValue(Array<T>? value)
         => value is Array<T> anyValue ? anyValue._value : JSValue.Undefined;
-}
-
-public partial struct String : IJSValueHolder<String>
-{
-    private JSValue _value;
-
-    public static explicit operator String(JSValue value) => new String { _value = value };
-    public static implicit operator JSValue(String value) => value._value;
-}
-
-struct TsUnknown
-{
-}
-
-struct TsAny
-{
-}
-
-struct TsUndefined { }
-struct TsNull { }
-struct TsBoolean { }
-struct TsNumber { }
-struct TsString { }
-struct TsObject { }
-struct TsObject<T> { }
-struct TsFunction { }
-struct TsFunction<TResult> { }
-struct TsFunction<T1, TResult> { }
-struct TsFunction<T1, T2, TResult> { } // Etc.
-
-struct TsArray<T> { }
-
-struct TsBigInt { }
-struct TsSymbol { }
-
-struct TsUnion<T1, T2> { }
-struct TsUnion<T1, T2, T3> { }
-struct TsUnion<T1, T2, T3, T4> { }
-
-//TODO: type aliases
-//TODO: interfaces
-//TODO: type assertions
-//TODO: literal types
-//TODO: as const - converts to literals
-//TODO: Non-null (postfix !) - can we use C# Nullable?
-//TODO: Enums
-//TODO: Narrowing
-//TODO:   typeof -> "string" "number" "bigint" "boolean" "symbol" "undefined" "object" "function" (where is null? typeof null is actually "object")
-//TODO:   Truthiness
-//TODO:   Equality Narrowing
-//TODO:   The in operator narrowing
-//TODO:   instanceof narrowing
-//TODO:   type predicates
-//TODO:   Discriminated unions
-//TODO:   the never type
-//TODO: Function Call Signatures
-//TODO: Function Construct Signatures
-//TODO: Generic Functions
-//TODO: Generic constraints
-//TODO: Can we use anonymous types for in-place type definitions?
-//TODO: Functions with variable parameters
-//TODO: Can we adopt C# delegate types?
-//TODO: Function overloads
-//TODO: Special types: void, object, unknown, never . Functions are objects
-//TODO: Special type: Function - it is like any that can always be called
-//TODO: Rest Parameters, Rest arguments
-//TODO: Parameter Destructuring
-//TODO: Function void return type means that it can return anything, but it is ignored
-
-//TODO: We can use tuple types to represent in-place object types. E.g TsObject<(TsString foo, TsOptional<TsString> bar)>
-
-struct TsOptional<T> { }
-struct TsNullable<T> { }
-struct TsNullish<T> { }
-
-interface ITsObject { }
-struct TsRecord<TKey, TValue> where TKey : ITsObject { }
-
-[AttributeUsageAttribute(AttributeTargets.GenericParameter)]
-class MySimpleAttribute : Attribute
-{
-    public string Name { get; set; }
-    public MySimpleAttribute(string name) { this.Name = name; }
-}
-
-interface IFoo<T>
-{
-}
-
-struct Foo<T> : IFoo<T>
-{
-}
-
-struct Bar
-{
-    public int BarValue { get; set; }
-}
-
-class Baz
-{
-    public string BazValue { get; set; }
-
-    public void Print() { }
-
-    public string CustomValue => "World";
-
-    public string CustomValue2 { get => "World"; set { } }
-}
-
-struct BarTag
-{
-}
-
-struct BazTag
-{
-}
-
-struct TS
-{
-    public static Bar As(IFoo<BarTag> _)
-    {
-        return new Bar();
-    }
-
-    public static Baz As(IFoo<BazTag> _)
-    {
-        return new Baz();
-    }
-}
-
-struct SimpleTest
-{
-    public void Func((int a, int b) x) { }
-    public void Test(TsObject<(TsString foo, TsOptional<TsString> bar)> objType)
-    {
-    }
-
-    public void Test2(Foo<BarTag> objType)
-    {
-        var x = TS.As(objType);
-        x.BarValue = 2;
-    }
-
-    public void Test3(Foo<BazTag> objType)
-    {
-        var x = TS.As(objType);
-        x.BazValue = "Hello";
-
-        TS.As(objType).Print();
-        var w = TS.As(objType).CustomValue;
-        TS.As(objType).CustomValue2 = "aaa";
-
-    }
 }

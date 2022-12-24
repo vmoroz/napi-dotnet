@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NodeApi.Runtime", "Runtime\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NodeApi.Generator", "Generator\NodeApi.Generator.csproj", "{BCD164BC-9F26-4E44-888E-52B18C6670FD}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NodeApi.Runtime.Generator", "Runtime.Generator\NodeApi.Runtime.Generator.csproj", "{2ED839D5-82F3-4824-B5B9-60507442D667}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{BCD164BC-9F26-4E44-888E-52B18C6670FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BCD164BC-9F26-4E44-888E-52B18C6670FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BCD164BC-9F26-4E44-888E-52B18C6670FD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2ED839D5-82F3-4824-B5B9-60507442D667}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2ED839D5-82F3-4824-B5B9-60507442D667}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2ED839D5-82F3-4824-B5B9-60507442D667}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2ED839D5-82F3-4824-B5B9-60507442D667}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
