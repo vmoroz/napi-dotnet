@@ -130,10 +130,6 @@ public partial struct PropertyKey : IJSValueHolder<PropertyKey>
 // interface PropertyDescriptor
 public partial struct PropertyDescriptor : IJSValueHolder<PropertyDescriptor>
 {
-    public static explicit operator PropertyDescriptor?(JSValue value)
-        => value.TypeOf() == JSValueType.Object ? (PropertyDescriptor)value : null;
-
-
     //configurable?: boolean;
     public Boolean? Configurable
     {
@@ -827,16 +823,10 @@ public partial struct Union<T1, T2, T3> : IJSValueHolder<Union<T1, T2, T3>>
 
 public partial struct Boolean : IJSValueHolder<Boolean>
 {
-    public static implicit operator JSValue(Boolean? value)
-        => value is Boolean boolValue ? boolValue._value : JSValue.Undefined;
 }
 
 public partial struct Number : IJSValueHolder<Number>
 {
-    public static explicit operator Number?(JSValue value)
-        => value.TypeOf() == JSValueType.Number ? (Number)value : null;
-    public static implicit operator JSValue(Number? value)
-        => value is Number numberValue ? numberValue._value : JSValue.Undefined;
 }
 
 public partial struct Function : IFunction<Function>
@@ -845,18 +835,10 @@ public partial struct Function : IFunction<Function>
 
 public partial struct Function<TResult> : IFunction<Function<TResult>>
 {
-    public static explicit operator Function<TResult>?(JSValue value)
-        => value.TypeOf() == JSValueType.Number ? (Function<TResult>)value : null;
-    public static implicit operator JSValue(Function<TResult>? value)
-        => value is Function<TResult> functionValue ? functionValue._value : JSValue.Undefined;
 }
 
 public partial struct Function<TArg1, TResult> : IFunction<Function<TArg1, TResult>>
 {
-    public static explicit operator Function<TArg1, TResult>?(JSValue value)
-        => value.TypeOf() == JSValueType.Number ? (Function<TArg1, TResult>)value : null;
-    public static implicit operator JSValue(Function<TArg1, TResult>? value)
-        => value is Function<TArg1, TResult> functionValue ? functionValue._value : JSValue.Undefined;
 }
 
 public partial struct Void : IJSValueHolder<Void>
@@ -865,16 +847,8 @@ public partial struct Void : IJSValueHolder<Void>
 
 public partial struct Any : IJSValueHolder<Any>
 {
-    public static explicit operator Any?(JSValue value)
-        => value.TypeOf() != JSValueType.Undefined ? (Any)value : null;
-    public static implicit operator JSValue(Any? value)
-        => value is Any anyValue ? anyValue._value : JSValue.Undefined;
 }
 
 public partial struct Array<T> : IJSValueHolder<Array<T>>
 {
-    public static explicit operator Array<T>?(JSValue value)
-        => value.TypeOf() != JSValueType.Undefined ? (Array<T>)value : null;
-    public static implicit operator JSValue(Array<T>? value)
-        => value is Array<T> anyValue ? anyValue._value : JSValue.Undefined;
 }
