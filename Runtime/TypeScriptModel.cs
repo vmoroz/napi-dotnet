@@ -271,14 +271,12 @@ public partial interface IString<TSelf> : IJSValueHolder<TSelf>
     Number lastIndexOf(String searchString, Number? position);
     Number localeCompare(String value);
 
-    // match(regexp: string | RegExp): RegExpMatchArray | null;
-    // replace(searchValue: string | RegExp, replaceValue: string): string;
-    // replace(searchValue: string | RegExp, replacer: (substring: string, ...args: any[]) => string): string;
-    // search(regexp: string | RegExp): number;
-
+    Nullable<RegExpMatchArray> match(OneOf<String, RegExp> regexp);
+    String replace(OneOf<String, RegExp> searchValue, String replaceValue);
+    String replace(OneOf<String, RegExp> searchValue, Function<String /*substring*/ /*...args: any[]*/, String> replacer);
+    Number search(OneOf<String, RegExp> regexp);
     String slice(Number? start = null, Number? end = null);
-
-    // split(separator: string | RegExp, limit?: number): string[];
+    Array<String> split(OneOf<String, RegExp> separator, Number? limit = null);
     String substring(Number start, Number? end = null);
     String toLowerCase();
     String toLocaleLowerCase(OneOf<String, Array<String>>? locales = null);
