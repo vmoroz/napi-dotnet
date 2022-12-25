@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -55,7 +56,7 @@ public partial interface IGlobal<TSelf> : IJSValueHolder<TSelf>
     String decodeURI(String value);
     String decodeURIComponent(String value);
     String encodeURI(String value);
-    String encodeURIComponent(Union<String, Number, Boolean> value);
+    String encodeURIComponent(OneOf<String, Number, Boolean> value);
 }
 
 public partial struct Global : IGlobal<Global>
@@ -239,9 +240,9 @@ public partial interface IString<TSelf> : IJSValueHolder<TSelf>
     String substring(Number start, Number? end = null);
     String toLowerCase();
 
-    String toLocaleLowerCase(Union<String, Array<String>>? locales = null);
+    String toLocaleLowerCase(OneOf<String, Array<String>>? locales = null);
     String toUpperCase();
-    String toLocaleUpperCase(Union<String, Array<String>>? locales = null);
+    String toLocaleUpperCase(OneOf<String, Array<String>>? locales = null);
     String trim();
     Number length { get; }
     String valueOf();
@@ -339,7 +340,7 @@ public partial interface IMath<TSelf> : IJSValueHolder<TSelf>
     where TSelf : struct, IMath<TSelf>
 {
     Number E { get; }
-    Number LN10{ get; }
+    Number LN10 { get; }
     Number LN2 { get; }
     Number LOG2E { get; }
     Number LOG10E { get; }
@@ -375,44 +376,103 @@ public partial interface IGlobal
     Math Math { get; set; }
 }
 
-/**
- * Represents a raw buffer of binary data, which is used to store data for the
- * different typed arrays. ArrayBuffers cannot be read from or written to directly,
- * but can be passed to a typed array or DataView Object to interpret the raw
- * buffer as needed.
- */
-// interface ArrayBuffer
-public partial struct ArrayBuffer : IJSValueHolder<ArrayBuffer>
+public partial interface IDate<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IDate<TSelf>
 {
-    /**
-     * Read-only. The length of the ArrayBuffer (in bytes).
-     */
-    //readonly byteLength: number;
-    public Number ByteLength => (Number)_value.GetProperty(NameTable.byteLength);
-
-
-    /**
-     * Returns a section of an ArrayBuffer.
-     */
-    //slice(begin: number, end?: number): ArrayBuffer;
-    public ArrayBuffer Slice(Number begin, Number? end = null)
-        => (ArrayBuffer)_value.CallMethod(NameTable.slice, begin, end);
+    String toString();
+    String toDateString();
+    String toTimeString();
+    String toLocaleString();
+    String toLocaleDateString();
+    String toLocaleTimeString();
+    Number valueOf();
+    Number getTime();
+    Number getFullYear();
+    Number getUTCFullYear();
+    Number getMonth();
+    Number getUTCMonth();
+    Number getDate();
+    Number getUTCDate();
+    Number getDay();
+    Number getUTCDay();
+    Number getHours();
+    Number getUTCHours();
+    Number getMinutes();
+    Number getUTCMinutes();
+    Number getSeconds();
+    Number getUTCSeconds();
+    Number getMilliseconds();
+    Number getUTCMilliseconds();
+    Number getTimezoneOffset();
+    Number setTime(Number time);
+    Number setMilliseconds(Number ms);
+    Number setUTCMilliseconds(Number ms);
+    Number setSeconds(Number sec, Number? ms = null);
+    Number setUTCSeconds(Number sec, Number? ms = null);
+    Number setMinutes(Number min, Number? sec = null, Number? ms = null);
+    Number setUTCMinutes(Number min, Number? sec = null, Number? ms = null);
+    Number setHours(Number hours, Number? min = null, Number? sec = null, Number? ms = null);
+    Number setUTCHours(Number hours, Number? min = null, Number? sec = null, Number? ms = null);
+    Number setDate(Number date);
+    Number setUTCDate(Number date);
+    Number setMonth(Number month, Number? date);
+    Number setUTCMonth(Number month, Number? date = null);
+    Number setFullYear(Number year, Number? month = null, Number? date = null);
+    Number setUTCFullYear(Number year, Number? month = null, Number? date = null);
+    String toUTCString();
+    String toISOString();
+    String toJSON(Any? key = null);
 }
 
+public partial struct Date : IDate<Date>
+{
+}
+
+public partial interface IDateConstructor<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IDateConstructor<TSelf>
+{
+    Date New();
+    Date New(Number value);
+    Date New(String value);
+    Date New(Number year, Number monthIndex, Number? date = null, Number? hours = null, Number? minutes = null, Number? seconds = null, Number? ms = null);
+    String Call();
+    Date prototype { get; }
+    Number parse(string s);
+    Number UTC(Number year, Number monthIndex, Number? date = null, Number? hours = null, Number? minutes = null, Number? seconds = null, Number? ms = null);
+    Number now();
+}
+
+public partial struct DateConstructor : IDateConstructor<DateConstructor>
+{
+}
+
+public partial interface IGlobal
+{
+    DateConstructor Date { get; set; }
+}
+
+public partial interface IArrayBuffer<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IArrayBuffer<TSelf>
+{
+    Number byteLength { get; }
+    ArrayBuffer Slice(Number begin, Number? end = null);
+}
+
+public partial struct ArrayBuffer : IArrayBuffer<ArrayBuffer>
+{
+}
 
 public partial class NameTable
 {
-    public static JSValue byteLength => GetStringName(nameof(byteLength));
-
     // TODO: Implement
     public static JSValue GetStringName(string value) => JSValue.Null;
 }
 
-public partial struct Union<T1, T2> : IJSValueHolder<Union<T1, T2>>
+public partial struct OneOf<T1, T2> : IJSValueHolder<OneOf<T1, T2>>
 {
 }
 
-public partial struct Union<T1, T2, T3> : IJSValueHolder<Union<T1, T2, T3>>
+public partial struct OneOf<T1, T2, T3> : IJSValueHolder<OneOf<T1, T2, T3>>
 {
 }
 
