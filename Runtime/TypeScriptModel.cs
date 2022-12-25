@@ -1,4 +1,5 @@
 using System.Linq;
+using NodeApi.EcmaScript;
 
 namespace NodeApi.EcmaScript;
 
@@ -549,9 +550,191 @@ public partial interface IGlobal
 }
 
 
+public partial interface IError<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IError<TSelf>
+{
+    String name { get; set; }
+    String message { get; set; }
+    String? stack { get; set; }
+}
+
+public partial struct Error : IError<Error>
+{
+}
+
+public partial interface IErrorConstructor<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IErrorConstructor<TSelf>
+{
+    Error New(String? message = null);
+    Error Call(String? message = null);
+    Error prototype { get; }
+}
+
+public partial struct ErrorConstructor : IErrorConstructor<ErrorConstructor>
+{
+}
+
+public partial interface IGlobal
+{
+    ErrorConstructor Error { get; set; }
+}
+
+public partial interface IEvalError<TSelf> : IError<TSelf>
+    where TSelf : struct, IEvalError<TSelf>
+{
+}
+
+public partial struct EvalError : IEvalError<EvalError>
+{
+}
+
+public partial interface IEvalErrorConstructor<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IEvalErrorConstructor<TSelf>
+{
+    EvalError New(String? message = null);
+    EvalError Call(String? message = null);
+    EvalError prototype { get; }
+}
+
+public partial struct EvalErrorConstructor : IEvalErrorConstructor<EvalErrorConstructor>
+{
+}
+
+public partial interface IGlobal
+{
+    EvalErrorConstructor EvalError { get; set; }
+}
+
+public partial interface IRangeError<TSelf> : IError<TSelf>
+    where TSelf : struct, IRangeError<TSelf>
+{
+}
+
+public partial struct RangeError : IRangeError<RangeError>
+{
+}
+
+public partial interface IRangeErrorConstructor<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IRangeErrorConstructor<TSelf>
+{
+    RangeError New(String? message = null);
+    RangeError Call(String? message = null);
+    RangeError prototype { get; }
+}
+
+public partial struct RangeErrorConstructor : IRangeErrorConstructor<RangeErrorConstructor>
+{
+}
+
+public partial interface IGlobal
+{
+    RangeErrorConstructor RangeError { get; set; }
+}
+
+public partial interface IReferenceError<TSelf> : IError<TSelf>
+    where TSelf : struct, IReferenceError<TSelf>
+{
+}
+
+public partial struct ReferenceError : IReferenceError<ReferenceError>
+{
+}
+
+public partial interface IReferenceErrorConstructor<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IReferenceErrorConstructor<TSelf>
+{
+    ReferenceError New(String? message = null);
+    ReferenceError Call(String? message = null);
+    ReferenceError prototype { get; }
+}
+
+public partial struct ReferenceErrorConstructor : IReferenceErrorConstructor<ReferenceErrorConstructor>
+{
+}
+
+public partial interface IGlobal
+{
+    ReferenceErrorConstructor ReferenceError { get; set; }
+}
+
+public partial interface ISyntaxError<TSelf> : IError<TSelf>
+    where TSelf : struct, ISyntaxError<TSelf>
+{
+}
+
+public partial struct SyntaxError : ISyntaxError<SyntaxError>
+{
+}
+
+public partial interface ISyntaxErrorConstructor<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, ISyntaxErrorConstructor<TSelf>
+{
+    SyntaxError New(String? message = null);
+    SyntaxError Call(String? message = null);
+    SyntaxError prototype { get; }
+}
+
+public partial struct SyntaxErrorConstructor : ISyntaxErrorConstructor<SyntaxErrorConstructor>
+{
+}
+
+public partial interface IGlobal
+{
+    SyntaxErrorConstructor SyntaxError { get; set; }
+}
+
+public partial interface ITypeError<TSelf> : IError<TSelf>
+    where TSelf : struct, ITypeError<TSelf>
+{
+}
+
+public partial struct TypeError : ITypeError<TypeError>
+{
+}
+
+public partial interface ITypeErrorConstructor<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, ITypeErrorConstructor<TSelf>
+{
+    TypeError New(String? message = null);
+    TypeError Call(String? message = null);
+    TypeError prototype { get; }
+}
+
+public partial struct TypeErrorConstructor : ITypeErrorConstructor<TypeErrorConstructor>
+{
+}
+
+public partial interface IGlobal
+{
+    TypeErrorConstructor TypeError { get; set; }
+}
 
 
+public partial interface IURIError<TSelf> : IError<TSelf>
+    where TSelf : struct, IURIError<TSelf>
+{
+}
 
+public partial struct URIError : IURIError<URIError>
+{
+}
+
+public partial interface IURIErrorConstructor<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IURIErrorConstructor<TSelf>
+{
+    URIError New(String? message = null);
+    URIError Call(String? message = null);
+    URIError prototype { get; }
+}
+
+public partial struct URIErrorConstructor : IURIErrorConstructor<URIErrorConstructor>
+{
+}
+
+public partial interface IGlobal
+{
+    URIErrorConstructor URIError { get; set; }
+}
 
 
 
