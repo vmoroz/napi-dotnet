@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Reflection;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace NodeApi.EcmaScript;
@@ -451,6 +452,78 @@ public partial interface IGlobal
     DateConstructor Date { get; set; }
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+public partial interface IConcatArray<T, TSelf> : IJSValueHolder<TSelf>
+    where T : struct, IJSValueHolder<T>
+    where TSelf : struct, IConcatArray<T, TSelf>
+{
+    Number length { get; }
+    T this[Number n] { get; }
+    String join(String? separator = null);
+    Array<T> slice(Number? start = null, Number? end = null);
+}
+
+public partial struct ConcatArray<T> : IConcatArray<T, ConcatArray<T>>
+    where T : struct, IJSValueHolder<T>
+{
+}
+
+public partial interface IReadonlyArray<T, TSelf> : IJSValueHolder<TSelf>
+    where T : struct, IJSValueHolder<T>
+    where TSelf : struct, IReadonlyArray<T, TSelf>
+{
+    Number length { get; }
+    String toString();
+    String toLocaleString();
+    Array<T> concat(params ConcatArray<T>[] items);
+    Array<T> concat(params OneOf<T, ConcatArray<T>>[] items);
+    String join(String? separator = null);
+    Array<T> slice(Number? start = null, Number? end = null);
+    Number indexOf(T searchElement, Number? fromIndex = null);
+    Number lastIndexOf(T searchElement, Number? fromIndex = null);
+    //TODO: How to simulate extends?
+    //TODO: How to simulate "is"?
+    //Original: every<S extends T>(predicate: (value: T, index: number, array: readonly T[]) => value is S, thisArg?: any): this is readonly S[];
+    Boolean every<S>(Function<T /*value*/, Number /*index*/, ReadonlyArray<T> /*array*/, Unknown> predicate, Any? thisArg = null)
+        where S : struct, IJSValueHolder<S>;
+    Boolean every(Function<T /*value*/, Number /*index*/, ReadonlyArray<T> /*array*/, Unknown> predicate, Any? thisArg = null);
+    Boolean some(Function<T /*value*/, Number /*index*/, ReadonlyArray<T> /*array*/, Unknown> predicate, Any? thisArg = null);
+    Void forEach(Function<T /*value*/, Number /*index*/, ReadonlyArray<T> /*array*/, Void> callbackfn, Any? thisArg = null);
+    Array<U> map<U>(Function<T /*value*/, Number /*index*/, ReadonlyArray<T> /*array*/, U> callbackfn, Any? thisArg = null)
+        where U : struct, IJSValueHolder<U>;
+    //TODO: How to simulate extends?
+    //TODO: How to simulate "is"?
+    //Original: filter<S extends T>(predicate: (value: T, index: number, array: readonly T[]) => value is S, thisArg?: any): S[];
+    Array<S> filter<S>(Function<T /*value*/, Number /*index*/, ReadonlyArray<T> /*array*/, Unknown> predicate, Any? thisArg = null)
+        where S : struct, IJSValueHolder<S>;
+    Array<T> filter(Function<T /*value*/, Number /*index*/, ReadonlyArray<T> /*array*/, Unknown> predicate, Any? thisArg = null);
+    T reduce(Function<T /*previousValue*/, T /*currentValue*/, Number /*currentIndex*/, ReadonlyArray<T> /*array*/, T> callbackfn);
+    T reduce(Function<T /*previousValue*/, T /*currentValue*/, Number /*currentIndex*/, ReadonlyArray<T> /*array*/, T> callbackfn, T initialValue);
+    U reduce<U>(Function<U /*previousValue*/, T /*currentValue*/, Number /*currentIndex*/, ReadonlyArray<T> /*array*/, U> callbackfn, U initialValue)
+        where U : struct, IJSValueHolder<U>;
+    T reduceRight(Function<T /*previousValue*/, T /*currentValue*/, Number /*currentIndex*/, ReadonlyArray<T> /*array*/, T> callbackfn);
+    T reduceRight(Function<T /*previousValue*/, T /*currentValue*/, Number /*currentIndex*/, ReadonlyArray<T> /*array*/, T> callbackfn, T initialValue);
+    U reduceRight<U>(Function<U /*previousValue*/, T /*currentValue*/, Number /*currentIndex*/, ReadonlyArray<T> /*array*/, U> callbackfn, U initialValue)
+        where U : struct, IJSValueHolder<U>;
+    T this[Number index] { get; }
+}
+
+public partial struct ReadonlyArray<T> : IReadonlyArray<T, ReadonlyArray<T>>
+    where T : struct, IJSValueHolder<T>
+{
+}
+
 public partial interface IArrayBuffer<TSelf> : IJSValueHolder<TSelf>
     where TSelf : struct, IArrayBuffer<TSelf>
 {
@@ -485,10 +558,42 @@ public partial struct Function : IFunction<Function>
 }
 
 public partial struct Function<TResult> : IFunction<Function<TResult>>
+    where TResult : struct, IJSValueHolder<TResult>
 {
 }
 
-public partial struct Function<TArg1, TResult> : IFunction<Function<TArg1, TResult>>
+public partial struct Function<TArg0, TResult>
+    : IFunction<Function<TArg0, TResult>>
+    where TArg0 : struct, IJSValueHolder<TArg0>
+    where TResult : struct, IJSValueHolder<TResult>
+{
+}
+
+
+public partial struct Function<TArg0, TArg1, TResult>
+    : IFunction<Function<TArg0, TArg1, TResult>>
+    where TArg0 : struct, IJSValueHolder<TArg0>
+    where TArg1 : struct, IJSValueHolder<TArg1>
+    where TResult : struct, IJSValueHolder<TResult>
+{
+}
+
+public partial struct Function<TArg0, TArg1, TArg2, TResult>
+    : IFunction<Function<TArg0, TArg1, TArg2, TResult>>
+    where TArg0 : struct, IJSValueHolder<TArg0>
+    where TArg1 : struct, IJSValueHolder<TArg1>
+    where TArg2 : struct, IJSValueHolder<TArg2>
+    where TResult : struct, IJSValueHolder<TResult>
+{
+}
+
+public partial struct Function<TArg0, TArg1, TArg2, TArg3, TResult>
+    : IFunction<Function<TArg0, TArg1, TArg2, TArg3, TResult>>
+    where TArg0 : struct, IJSValueHolder<TArg0>
+    where TArg1 : struct, IJSValueHolder<TArg1>
+    where TArg2 : struct, IJSValueHolder<TArg2>
+    where TArg3 : struct, IJSValueHolder<TArg3>
+    where TResult : struct, IJSValueHolder<TResult>
 {
 }
 
@@ -501,5 +606,9 @@ public partial struct Any : IJSValueHolder<Any>
 }
 
 public partial struct Array<T> : IJSValueHolder<Array<T>>
+{
+}
+
+public partial struct Unknown : IJSValueHolder<Unknown>
 {
 }
