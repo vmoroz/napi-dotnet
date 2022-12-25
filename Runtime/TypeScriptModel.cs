@@ -42,7 +42,7 @@ public partial struct PropertyDescriptorMap : IPropertyDescriptorMap<PropertyDes
 }
 
 public partial interface IGlobal<TSelf> : IJSValueHolder<TSelf>
-    where TSelf : IGlobal<TSelf>
+    where TSelf : struct, IGlobal<TSelf>
 {
     Number NaN { get; set; }
     Number Infinity { get; set; }
@@ -169,14 +169,18 @@ public partial struct Readonly<T> : IJSValueHolder<Readonly<T>>
 {
 }
 
-public interface IJSValueHolder<TSelf> where TSelf : IJSValueHolder<TSelf>
+public interface IJSValueHolder<TSelf> where TSelf : struct, IJSValueHolder<TSelf>
 {
     public static abstract explicit operator TSelf(JSValue value);
     public static abstract implicit operator JSValue(TSelf value);
+
+    // Map Undefined to Nullable
+    public static abstract explicit operator TSelf?(JSValue value);
+    public static abstract implicit operator JSValue(TSelf? value);
 }
 
 public interface IFunction<TSelf> : IJSValueHolder<TSelf>
-    where TSelf : IFunction<TSelf>
+    where TSelf : struct, IFunction<TSelf>
 {
 }
 
@@ -213,7 +217,7 @@ public partial interface IGlobal<TSelf>
 }
 
 public partial interface IString<TSelf> : IJSValueHolder<TSelf>
-    where TSelf : IString<TSelf>
+    where TSelf : struct, IString<TSelf>
 {
     String toString();
     String charAt(Number index);
@@ -265,6 +269,32 @@ public partial interface IGlobal<TSelf>
     StringConstructor String { get; set; }
 }
 
+public partial interface IBoolean<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IBoolean<TSelf>
+{
+    Boolean valueOf();
+}
+
+public partial struct Boolean : IBoolean<Boolean>
+{
+}
+
+public partial interface IBooleanConstructor<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IBooleanConstructor<TSelf>
+{
+    Boolean New(Any? value = null);
+    Boolean Call<T>(T? value) where T : struct, IJSValueHolder<T>;
+    Boolean prototype { get; }
+}
+
+public partial struct BooleanConstructor : IBooleanConstructor<BooleanConstructor>
+{
+}
+
+public partial interface IGlobal
+{
+    BooleanConstructor Boolean { get; set; }
+}
 /**
  * Represents a raw buffer of binary data, which is used to store data for the
  * different typed arrays. ArrayBuffers cannot be read from or written to directly,
@@ -303,10 +333,6 @@ public partial struct Union<T1, T2> : IJSValueHolder<Union<T1, T2>>
 }
 
 public partial struct Union<T1, T2, T3> : IJSValueHolder<Union<T1, T2, T3>>
-{
-}
-
-public partial struct Boolean : IJSValueHolder<Boolean>
 {
 }
 
