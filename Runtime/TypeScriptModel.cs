@@ -333,6 +333,48 @@ public partial interface IGlobal
     NumberConstructor Number { get; set; }
 }
 
+//TODO: Add import types and template strings array
+
+public partial interface IMath<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IMath<TSelf>
+{
+    Number E { get; }
+    Number LN10{ get; }
+    Number LN2 { get; }
+    Number LOG2E { get; }
+    Number LOG10E { get; }
+    Number PI { get; }
+    Number SQRT1_2 { get; }
+    Number SQRT2 { get; }
+    Number abs(Number x);
+    Number acos(Number x);
+    Number asin(Number x);
+    Number atan(Number x);
+    Number atan2(Number y, Number x);
+    Number ceil(Number x);
+    Number cos(Number x);
+    Number exp(Number x);
+    Number floor(Number x);
+    Number log(Number x);
+    Number max(params Number[] values);
+    Number min(params Number[] values);
+    Number pow(Number x, Number y);
+    Number random();
+    Number round(Number x);
+    Number sin(Number x);
+    Number sqrt(Number x);
+    Number tan(Number x);
+}
+
+public partial struct Math : IMath<Math>
+{
+}
+
+public partial interface IGlobal
+{
+    Math Math { get; set; }
+}
+
 /**
  * Represents a raw buffer of binary data, which is used to store data for the
  * different typed arrays. ArrayBuffers cannot be read from or written to directly,
