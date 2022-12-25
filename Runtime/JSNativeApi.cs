@@ -542,6 +542,51 @@ public static partial class JSNativeApi
         return result;
     }
 
+    public static unsafe JSValue Call(this JSValue thisValue, JSValue thisArg, JSValue arg0, params JSValue[] args)
+    {
+        int argc = args.Length + 1;
+        napi_value* argv = stackalloc napi_value[argc];
+        argv[0] = (napi_value)arg0;
+        for (int i = 1; i < argc; ++i)
+        {
+            argv[i] = (napi_value)args[i - 1];
+        }
+        napi_call_function(Env, (napi_value)thisArg, (napi_value)thisValue,
+          (nuint)argc, argv, out napi_value result).ThrowIfFailed();
+        return result;
+    }
+
+    public static unsafe JSValue Call(this JSValue thisValue, JSValue thisArg, JSValue arg0, JSValue arg1, params JSValue[] args)
+    {
+        int argc = args.Length + 2;
+        napi_value* argv = stackalloc napi_value[argc];
+        argv[0] = (napi_value)arg0;
+        argv[1] = (napi_value)arg1;
+        for (int i = 2; i < argc; ++i)
+        {
+            argv[i] = (napi_value)args[i - 2];
+        }
+        napi_call_function(Env, (napi_value)thisArg, (napi_value)thisValue,
+          (nuint)argc, argv, out napi_value result).ThrowIfFailed();
+        return result;
+    }
+
+    public static unsafe JSValue Call(this JSValue thisValue, JSValue thisArg, JSValue arg0, JSValue arg1, JSValue arg2, params JSValue[] args)
+    {
+        int argc = args.Length + 3;
+        napi_value* argv = stackalloc napi_value[argc];
+        argv[0] = (napi_value)arg0;
+        argv[1] = (napi_value)arg1;
+        argv[2] = (napi_value)arg2;
+        for (int i = 3; i < argc; ++i)
+        {
+            argv[i] = (napi_value)args[i - 3];
+        }
+        napi_call_function(Env, (napi_value)thisArg, (napi_value)thisValue,
+          (nuint)argc, argv, out napi_value result).ThrowIfFailed();
+        return result;
+    }
+
     public static unsafe JSValue CallAsConstructor(this JSValue thisValue)
     {
         napi_new_instance(Env, (napi_value)thisValue, 0, null, out napi_value result).ThrowIfFailed();
@@ -555,13 +600,84 @@ public static partial class JSNativeApi
         return result;
     }
 
+    public static unsafe JSValue CallAsConstructor(this JSValue thisValue, JSValue arg0, JSValue arg1)
+    {
+        Span<napi_value> args = stackalloc napi_value[2];
+        args[0] = (napi_value)arg0;
+        args[1] = (napi_value)arg1;
+        fixed (napi_value* argv = args)
+        {
+            napi_new_instance(Env, (napi_value)thisValue, (nuint)args.Length, argv, out napi_value result).ThrowIfFailed();
+            return result;
+        }
+    }
+
+    public static unsafe JSValue CallAsConstructor(this JSValue thisValue, JSValue arg0, JSValue arg1, JSValue arg2)
+    {
+        Span<napi_value> args = stackalloc napi_value[3];
+        args[0] = (napi_value)arg0;
+        args[1] = (napi_value)arg1;
+        args[2] = (napi_value)arg2;
+        fixed (napi_value* argv = args)
+        {
+            napi_new_instance(Env, (napi_value)thisValue, (nuint)args.Length, argv, out napi_value result).ThrowIfFailed();
+            return result;
+        }
+    }
+
     public static unsafe JSValue CallAsConstructor(this JSValue thisValue, params JSValue[] args)
     {
         int argc = args.Length;
+        if (argc == 0)
+        {
+            return CallAsConstructor(thisValue);
+        }
         napi_value* argv = stackalloc napi_value[argc];
         for (int i = 0; i < argc; ++i)
         {
             argv[i] = (napi_value)args[i];
+        }
+        napi_new_instance(Env, (napi_value)thisValue, (nuint)argc, argv, out napi_value result).ThrowIfFailed();
+        return result;
+    }
+
+    public static unsafe JSValue CallAsConstructor(this JSValue thisValue, JSValue arg0, params JSValue[] args)
+    {
+        int argc = args.Length + 1;
+        napi_value* argv = stackalloc napi_value[argc];
+        argv[0] = (napi_value)arg0;
+        for (int i = 1; i < argc; ++i)
+        {
+            argv[i] = (napi_value)args[i - 1];
+        }
+        napi_new_instance(Env, (napi_value)thisValue, (nuint)argc, argv, out napi_value result).ThrowIfFailed();
+        return result;
+    }
+
+    public static unsafe JSValue CallAsConstructor(this JSValue thisValue, JSValue arg0, JSValue arg1, params JSValue[] args)
+    {
+        int argc = args.Length + 2;
+        napi_value* argv = stackalloc napi_value[argc];
+        argv[0] = (napi_value)arg0;
+        argv[1] = (napi_value)arg1;
+        for (int i = 2; i < argc; ++i)
+        {
+            argv[i] = (napi_value)args[i - 2];
+        }
+        napi_new_instance(Env, (napi_value)thisValue, (nuint)argc, argv, out napi_value result).ThrowIfFailed();
+        return result;
+    }
+
+    public static unsafe JSValue CallAsConstructor(this JSValue thisValue, JSValue arg0, JSValue arg1, JSValue arg2, params JSValue[] args)
+    {
+        int argc = args.Length + 3;
+        napi_value* argv = stackalloc napi_value[argc];
+        argv[0] = (napi_value)arg0;
+        argv[1] = (napi_value)arg1;
+        argv[2] = (napi_value)arg2;
+        for (int i = 3; i < argc; ++i)
+        {
+            argv[i] = (napi_value)args[i - 3];
         }
         napi_new_instance(Env, (napi_value)thisValue, (nuint)argc, argv, out napi_value result).ThrowIfFailed();
         return result;

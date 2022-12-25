@@ -84,6 +84,50 @@ public static class ExtensionMethods
     public static JSValue CallMethod<T>(this JSValue thisValue, JSValue name, params T[] args)
         where T : struct, IJSValueHolder<T>
             => thisValue.GetProperty(name).Call(thisValue, args.Select(a => (JSValue)a).ToArray());
+
+    public static JSValue CallMethod<T>(this JSValue thisValue, JSValue name, JSValue arg0, params T[] args)
+        where T : struct, IJSValueHolder<T>
+        => thisValue.GetProperty(name).Call(thisValue, arg0, args.Select(a => (JSValue)a).ToArray());
+
+    public static JSValue CallMethod<T>(this JSValue thisValue, JSValue name, JSValue arg0, JSValue arg1, params T[] args)
+        where T : struct, IJSValueHolder<T>
+        => thisValue.GetProperty(name).Call(thisValue, arg0, arg1, args.Select(a => (JSValue)a).ToArray());
+
+    public static JSValue CallMethod<T>(this JSValue thisValue, JSValue name, JSValue arg0, JSValue arg1, JSValue arg2, params T[] args)
+        where T : struct, IJSValueHolder<T>
+        => thisValue.GetProperty(name).Call(thisValue, arg0, arg1, arg2, args.Select(a => (JSValue)a).ToArray());
+
+    public static JSValue Call<T>(this JSValue thisValue, params T[] args)
+        where T : struct, IJSValueHolder<T>
+        => JSNativeApi.Call(thisValue, thisValue, args.Select(a => (JSValue)a).ToArray());
+
+    public static JSValue Call<T>(this JSValue thisValue, JSValue arg0, params T[] args)
+        where T : struct, IJSValueHolder<T>
+        => JSNativeApi.Call(thisValue, thisValue, arg0, args.Select(a => (JSValue)a).ToArray());
+
+    public static JSValue Call<T>(this JSValue thisValue, JSValue arg0, JSValue arg1, params T[] args)
+        where T : struct, IJSValueHolder<T>
+        => JSNativeApi.Call(thisValue, thisValue, arg0, arg1, args.Select(a => (JSValue)a).ToArray());
+
+    public static JSValue Call<T>(this JSValue thisValue, JSValue arg0, JSValue arg1, JSValue arg2, params T[] args)
+        where T : struct, IJSValueHolder<T>
+        => JSNativeApi.Call(thisValue, thisValue, arg0, arg1, arg2, args.Select(a => (JSValue)a).ToArray());
+
+    public static JSValue CallAsConstructor<T>(this JSValue thisValue, params T[] args)
+    where T : struct, IJSValueHolder<T>
+        => JSNativeApi.CallAsConstructor(thisValue, args.Select(a => (JSValue)a).ToArray());
+
+    public static JSValue CallAsConstructor<T>(this JSValue thisValue, JSValue arg0, params T[] args)
+        where T : struct, IJSValueHolder<T>
+        => JSNativeApi.CallAsConstructor(thisValue, arg0, args.Select(a => (JSValue)a).ToArray());
+
+    public static JSValue CallAsConstructor<T>(this JSValue thisValue, JSValue arg0, JSValue arg1, params T[] args)
+        where T : struct, IJSValueHolder<T>
+        => JSNativeApi.CallAsConstructor(thisValue, arg0, arg1, args.Select(a => (JSValue)a).ToArray());
+
+    public static JSValue CallAsConstructor<T>(this JSValue thisValue, JSValue arg0, JSValue arg1, JSValue arg2, params T[] args)
+        where T : struct, IJSValueHolder<T>
+        => JSNativeApi.CallAsConstructor(thisValue, arg0, arg1, arg2, args.Select(a => (JSValue)a).ToArray());
 }
 
 public partial interface ISymbol<TSelf> : IJSValueHolder<TSelf>
@@ -524,6 +568,82 @@ public partial struct ReadonlyArray<T> : IReadonlyArray<T, ReadonlyArray<T>>
 {
 }
 
+public partial interface IArray<T, TSelf> : IJSValueHolder<TSelf>
+    where T : struct, IJSValueHolder<T>
+    where TSelf : struct, IArray<T, TSelf>
+{
+    Number length { get; set; }
+    String toString();
+    String toLocaleString();
+    T? pop();
+    Number push(params T[] items);
+    Array<T> concat(params ConcatArray<T>[] items);
+    Array<T> concat(params OneOf<T, ConcatArray<T>>[] items);
+    String join(String? separator = null);
+    Array<T> reverse();
+    T? shift();
+    Array<T> slice(Number? start = null, Number? end = null);
+    //TODO: how to return "this"? Should it be ref?
+    Array<T> sort(Function<T /*a*/, T/*b*/, Number>? compareFn = null);
+    Array<T> splice(Number start, Number? deleteCount = null);
+    Array<T> splice(Number start, Number deleteCount, params T[] items);
+    Number unshift(params T[] items);
+    Number indexOf(T searchElement, Number? fromIndex = null);
+    Number lastIndexOf(T searchElement, Number? fromIndex = null);
+    Boolean every<S>(Function<T /*value*/, Number /*index*/, Array<T> /*array*/, Unknown> predicate, Any? thisArg = null)
+        where S : struct, IJSValueHolder<S>;
+    Boolean every(Function<T /*value*/, Number /*index*/, Array<T> /*array*/, Unknown> predicate, Any? thisArg = null);
+    Boolean some(Function<T /*value*/, Number /*index*/, Array<T> /*array*/, Unknown> predicate, Any? thisArg = null);
+    Void forEach(Function<T /*value*/, Number /*index*/, Array<T> /*array*/, Void> callbackfn, Any? thisArg = null);
+    Array<U> map<U>(Function<T /*value*/, Number /*index*/, Array<T> /*array*/, U> callbackfn, Any? thisArg = null)
+        where U : struct, IJSValueHolder<U>;
+    Array<S> filter<S>(Function<T /*value*/, Number /*index*/, Array<T> /*array*/, Unknown> predicate, Any? thisArg = null)
+        where S : struct, IJSValueHolder<S>;
+    Array<T> filter(Function<T /*value*/, Number /*index*/, Array<T> /*array*/, Unknown> predicate, Any? thisArg = null);
+    T reduce(Function<T /*previousValue*/, T /*currentValue*/, Number /*currentIndex*/, Array<T> /*array*/, T> callbackfn);
+    T reduce(Function<T /*previousValue*/, T /*currentValue*/, Number /*currentIndex*/, Array<T> /*array*/, T> callbackfn, T initialValue);
+    U reduce<U>(Function<U /*previousValue*/, T /*currentValue*/, Number /*currentIndex*/, Array<T> /*array*/, U> callbackfn, U initialValue)
+        where U : struct, IJSValueHolder<U>;
+    T reduceRight(Function<T /*previousValue*/, T /*currentValue*/, Number /*currentIndex*/, Array<T> /*array*/, T> callbackfn);
+    T reduceRight(Function<T /*previousValue*/, T /*currentValue*/, Number /*currentIndex*/, Array<T> /*array*/, T> callbackfn, T initialValue);
+    U reduceRight<U>(Function<U /*previousValue*/, T /*currentValue*/, Number /*currentIndex*/, Array<T> /*array*/, U> callbackfn, U initialValue)
+        where U : struct, IJSValueHolder<U>;
+    T this[Number index] { get; set; }
+}
+
+public partial struct Array<T> : IArray<T, Array<T>>
+    where T : struct, IJSValueHolder<T>
+{
+}
+
+public partial interface IArrayConstructor<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IArrayConstructor<TSelf>
+{
+    Array<Any> New(Number? arrayLength = null);
+    Array<T> New<T>(Number arrayLength) where T : struct, IJSValueHolder<T>;
+    Array<T> New<T>(params T[] items) where T : struct, IJSValueHolder<T>;
+    Array<Any> Call(Number? arrayLength = null);
+    Array<T> Call<T>(Number arrayLength) where T : struct, IJSValueHolder<T>;
+    Array<T> Call<T>(params T[] items) where T : struct, IJSValueHolder<T>;
+    //TODO: What does it mean that he result must be "arg is any[]"
+    Boolean isArray(Any arg);
+    Array<Any> prototype { get; }
+}
+
+public partial struct ArrayConstructor : IArrayConstructor<ArrayConstructor>
+{
+}
+
+public partial interface IGlobal
+{
+    ArrayConstructor Array { get; set; }
+}
+
+
+
+
+
+
 public partial interface IArrayBuffer<TSelf> : IJSValueHolder<TSelf>
     where TSelf : struct, IArrayBuffer<TSelf>
 {
@@ -602,10 +722,6 @@ public partial struct Void : IJSValueHolder<Void>
 }
 
 public partial struct Any : IJSValueHolder<Any>
-{
-}
-
-public partial struct Array<T> : IJSValueHolder<Array<T>>
 {
 }
 
