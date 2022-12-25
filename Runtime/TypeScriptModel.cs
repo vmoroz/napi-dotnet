@@ -1,5 +1,6 @@
 using System.Linq;
 using NodeApi.EcmaScript;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace NodeApi.EcmaScript;
 
@@ -753,10 +754,6 @@ public partial interface IGlobal
     JSON JSON { get; set; }
 }
 
-
-
-
-
 public partial interface IReadonlyArray<TSelf, T> : IJSValueHolder<TSelf>
     where TSelf : struct, IReadonlyArray<TSelf, T>
     where T : struct, IJSValueHolder<T>
@@ -888,10 +885,20 @@ public partial interface IGlobal
     ArrayConstructor Array { get; set; }
 }
 
+public partial interface ITypedPropertyDescriptor<TSelf, T> : IJSValueHolder<TSelf>
+    where TSelf : struct, ITypedPropertyDescriptor<TSelf, T>
+    where T : struct, IJSValueHolder<T>
+{
+    Boolean? enumerable { get; set; }
+    Boolean? configurable { get; set; }
+    Boolean? writable { get; set; }
+    T? value { get; set; }
+    Function<T>? get { get; set; }
+    Function<T /*value*/, Void>? set { get; set; }
+}
 
-
-
-
+//TODO: Add Promise
+//TODO: Add the utility types
 
 public partial interface IArrayBuffer<TSelf> : IJSValueHolder<TSelf>
     where TSelf : struct, IArrayBuffer<TSelf>
@@ -903,6 +910,96 @@ public partial interface IArrayBuffer<TSelf> : IJSValueHolder<TSelf>
 public partial struct ArrayBuffer : IArrayBuffer<ArrayBuffer>
 {
 }
+
+public partial interface IArrayBufferTypes<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IArrayBufferTypes<TSelf>
+{
+    ArrayBuffer ArrayBuffer { get; set; }
+}
+
+public partial struct ArrayBufferTypes : IArrayBufferTypes<ArrayBufferTypes>
+{
+}
+
+//type ArrayBufferLike = ArrayBufferTypes[keyof ArrayBufferTypes];
+
+public partial interface IArrayBufferConstructor<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IArrayBufferConstructor<TSelf>
+{
+    ArrayBuffer prototype { get; }
+    ArrayBuffer New(Number byteLength);
+    //TODO: arg is ArrayBufferView
+    Boolean isView(Any arg);
+}
+
+public partial struct ArrayBufferConstructor : IArrayBufferConstructor<ArrayBufferConstructor>
+{
+}
+
+public partial interface IGlobal
+{
+    ArrayBufferConstructor ArrayBuffer { get; set; }
+}
+
+public partial interface IArrayBufferView<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IArrayBufferView<TSelf>
+{
+    //TODO: ArrayBufferLike
+    ArrayBuffer buffer { get; set; }
+    Number byteLength { get; set; }
+    Number byteOffset { get; set; }
+}
+
+public partial struct ArrayBufferView : IArrayBufferView<ArrayBufferView>
+{
+}
+
+public partial interface IDataView<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IDataView<TSelf>
+{
+    ArrayBuffer buffer { get; }
+    Number byteLength { get; }
+    Number byteOffset { get; }
+    Number getFloat32(Number byteOffset, Boolean? littleEndian = null);
+    Number getFloat64(Number byteOffset, Boolean? littleEndian = null);
+    Number getInt8(Number byteOffset);
+    Number getInt16(Number byteOffset, Boolean? littleEndian = null);
+    Number getInt32(Number byteOffset, Boolean? littleEndian = null);
+    Number getUint8(Number byteOffset);
+    Number getUint16(Number byteOffset, Boolean? littleEndian = null);
+    Number getUint32(Number byteOffset, Boolean? littleEndian = null);
+    Void setFloat32(Number byteOffset, Number value, Boolean? littleEndian = null);
+    Void setFloat64(Number byteOffset, Number value, Boolean? littleEndian = null);
+    Void setInt8(Number byteOffset, Number value);
+    Void setInt16(Number byteOffset, Number value, Boolean? littleEndian = null);
+    Void setInt32(Number byteOffset, Number value, Boolean? littleEndian = null);
+    Void setUint8(Number byteOffset, Number value);
+    Void setUint16(Number byteOffset, Number value, Boolean? littleEndian = null);
+    Void setUint32(Number byteOffset, Number value, Boolean? littleEndian = null);
+}
+
+public partial struct DataView : IDataView<DataView>
+{
+}
+
+public partial interface IDataViewConstructor<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IDataViewConstructor<TSelf>
+{
+    DataView prototype { get; }
+    DataView New(ArrayBuffer buffer, Number? byteOffset = null, Number? byteLength = null);
+}
+
+public partial struct DataViewConstructor : IDataViewConstructor<DataViewConstructor>
+{
+}
+
+public partial interface IGlobal
+{
+    DataViewConstructor DataView { get; set; }
+}
+
+
+
 
 public partial class NameTable
 {
