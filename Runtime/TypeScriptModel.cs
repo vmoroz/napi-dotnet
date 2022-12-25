@@ -736,26 +736,26 @@ public partial interface IGlobal
     URIErrorConstructor URIError { get; set; }
 }
 
-
-
-
-
-
-
-public partial interface IConcatArray<TSelf, T> : IJSValueHolder<TSelf>
-    where TSelf : struct, IConcatArray<TSelf, T>
-    where T : struct, IJSValueHolder<T>
+public partial interface IJSON<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IJSON<TSelf>
 {
-    Number length { get; }
-    T this[Number n] { get; }
-    String join(String? separator = null);
-    Array<T> slice(Number? start = null, Number? end = null);
+    Any parse(String text, Function<Any /*this*/, String /*key*/, Any /*value*/, Any>? reviver = null);
+    String stringify(Any value, Function<Any /*this*/, String /*key*/, Any /*value*/, Any>? replacer = null, OneOf<String, Number>? space = null);
+    String stringify(Any value, Nullable<Array<OneOf<Number, String>>>? replacer = null, OneOf<String, Number>? space = null);
 }
 
-public partial struct ConcatArray<T> : IConcatArray<ConcatArray<T>, T>
-    where T : struct, IJSValueHolder<T>
+public partial struct JSON : IJSON<JSON>
 {
 }
+
+public partial interface IGlobal
+{
+    JSON JSON { get; set; }
+}
+
+
+
+
 
 public partial interface IReadonlyArray<TSelf, T> : IJSValueHolder<TSelf>
     where TSelf : struct, IReadonlyArray<TSelf, T>
@@ -798,6 +798,21 @@ public partial interface IReadonlyArray<TSelf, T> : IJSValueHolder<TSelf>
 }
 
 public partial struct ReadonlyArray<T> : IReadonlyArray<ReadonlyArray<T>, T>
+    where T : struct, IJSValueHolder<T>
+{
+}
+
+public partial interface IConcatArray<TSelf, T> : IJSValueHolder<TSelf>
+    where TSelf : struct, IConcatArray<TSelf, T>
+    where T : struct, IJSValueHolder<T>
+{
+    Number length { get; }
+    T this[Number n] { get; }
+    String join(String? separator = null);
+    Array<T> slice(Number? start = null, Number? end = null);
+}
+
+public partial struct ConcatArray<T> : IConcatArray<ConcatArray<T>, T>
     where T : struct, IJSValueHolder<T>
 {
 }
