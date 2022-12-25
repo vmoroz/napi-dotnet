@@ -1,4 +1,5 @@
 using System.Linq;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace NodeApi.EcmaScript;
 
@@ -295,6 +296,43 @@ public partial interface IGlobal
 {
     BooleanConstructor Boolean { get; set; }
 }
+
+public partial interface INumber<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, INumber<TSelf>
+{
+    String toString(Number? radix = null);
+    String toFixed(Number? fractionDigits = null);
+    String toExponential(Number? fractionDigits = null);
+    String toPrecision(Number? precision = null);
+    Number valueOf();
+}
+
+public partial struct Number : INumber<Number>
+{
+}
+
+public partial interface INumberConstructor<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, INumberConstructor<TSelf>
+{
+    Number New(Any? value = null);
+    Number Call(Any? value = null);
+    Number prototype { get; }
+    Number MAX_VALUE { get; }
+    Number MIN_VALUE { get; }
+    Number NaN { get; }
+    Number NEGATIVE_INFINITY { get; }
+    Number POSITIVE_INFINITY { get; }
+}
+
+public partial struct NumberConstructor : INumberConstructor<NumberConstructor>
+{
+}
+
+public partial interface IGlobal
+{
+    NumberConstructor Number { get; set; }
+}
+
 /**
  * Represents a raw buffer of binary data, which is used to store data for the
  * different typed arrays. ArrayBuffers cannot be read from or written to directly,
