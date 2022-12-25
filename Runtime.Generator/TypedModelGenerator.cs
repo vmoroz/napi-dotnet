@@ -177,26 +177,46 @@ namespace {namespaceName}
                             continue;
                         }
 
-                        nameTable.Add(methodSymbol.Name);
+                        string methodName = methodSymbol.Name;
+                        nameTable.Add(methodName);
 
-                        string methodText = methodSymbol.DeclaringSyntaxReferences[0].GetSyntax().GetText().ToString();
-                        methodText = methodText.Trim();
-                        methodText = methodText.Substring(0, methodText.Length - 1);
+                        string genericArgs = "";
+                        string typeContraints = "";
+                        if (methodSymbol.IsGenericMethod)
+                        {
+                            genericArgs = "<" + string.Join(", ", methodSymbol.TypeParameters.Select(p => p.ToDisplayString())) + ">";
+
+                            foreach (ITypeParameterSymbol p in methodSymbol.TypeParameters)
+                            {
+                                if (p.HasValueTypeConstraint)
+                                {
+                                    string constraintTypes = string.Join(", ", p.ConstraintTypes.Select(c => c.ToDisplayString()));
+                                    typeContraints += $@"
+            where {p.ToDisplayString()} : struct, {constraintTypes}";
+                                }
+                            }
+                        }
+
+                        string parameters = string.Join(", ", methodSymbol.Parameters.Select(p
+                            => p.Type.ToDisplayString()
+                            + " "
+                            + p.Name
+                            + (p.HasExplicitDefaultValue ? " = " + (p.ExplicitDefaultValue is object o ? o.ToString() : "null") : "")));
                         string returnTypeName = methodSymbol.ReturnType.ToDisplayString();
-                        if (methodSymbol.Name == "New")
+                        if (methodName == "New")
                         {
                             string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
                             source.Append($@"
-        public {methodText}
+        public {returnTypeName} {methodName}{genericArgs}({parameters}){typeContraints}
             => ({returnTypeName})_value.CallAsConstructor({args});
 ");
                         }
-                        else if (methodSymbol.Name == "Call")
+                        else if (methodName == "Call")
                         {
                             string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
                             args = args.Length > 0 ? ", " + args : "";
                             source.Append($@"
-        public {methodText}
+        public {returnTypeName} {methodName}{genericArgs}({parameters}){typeContraints}
             => ({returnTypeName})_value.Call(_value{args});
 ");
                         }
@@ -205,8 +225,8 @@ namespace {namespaceName}
                             string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
                             args = args.Length > 0 ? ", " + args : "";
                             source.Append($@"
-        public {methodText}
-            => ({returnTypeName})_value.CallMethod(NameTable.{methodSymbol.Name}{args});
+        public {returnTypeName} {methodName}{genericArgs}({parameters}){typeContraints}
+            => ({returnTypeName})_value.CallMethod(NameTable.{methodName}{args});
 ");
                         }
                     }

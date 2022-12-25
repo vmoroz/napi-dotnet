@@ -1,7 +1,4 @@
-using System;
 using System.Linq;
-using System.Reflection;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace NodeApi.EcmaScript;
 
@@ -284,7 +281,6 @@ public partial interface IString<TSelf> : IJSValueHolder<TSelf>
     // split(separator: string | RegExp, limit?: number): string[];
     String substring(Number start, Number? end = null);
     String toLowerCase();
-
     String toLocaleLowerCase(OneOf<String, Array<String>>? locales = null);
     String toUpperCase();
     String toLocaleUpperCase(OneOf<String, Array<String>>? locales = null);
@@ -496,6 +492,63 @@ public partial interface IGlobal
     DateConstructor Date { get; set; }
 }
 
+public partial interface IRegExpMatchArray<TSelf> : IArray<TSelf, String>
+    where TSelf : struct, IRegExpMatchArray<TSelf>
+{
+    Number? index { get; set; }
+    String? input { get; set; }
+}
+
+public partial struct RegExpMatchArray : IRegExpMatchArray<RegExpMatchArray>
+{
+}
+
+public partial interface IRegExpExecArray<TSelf> : IArray<TSelf, String>
+    where TSelf : struct, IRegExpExecArray<TSelf>
+{
+    Number? index { get; set; }
+    String? input { get; set; }
+}
+
+public partial struct RegExpExecArray : IRegExpExecArray<RegExpExecArray>
+{
+}
+
+public partial interface IRegExp<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IRegExp<TSelf>
+{
+    Nullable<RegExpExecArray> exec(String value);
+    Boolean test(String value);
+    String source { get; }
+    Boolean global { get; }
+    Boolean ignoreCase { get; }
+    Boolean multiline { get; }
+    Number lastIndex { get; set; }
+}
+
+public partial struct RegExp : IRegExp<RegExp>
+{
+}
+
+
+public partial interface IRegExpConstructor<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IRegExpConstructor<TSelf>
+{
+    RegExp New(OneOf<RegExp, String> pattern);
+    RegExp New(String pattern, String? flags = null);
+    RegExp Call(OneOf<RegExp, String> pattern);
+    RegExp Call(String pattern, String? flags = null);
+    RegExp prototype { get; }
+}
+
+public partial struct RegExpConstructor : IRegExpConstructor<RegExpConstructor>
+{
+}
+
+public partial interface IGlobal
+{
+    RegExpConstructor RegExp { get; set; }
+}
 
 
 
@@ -508,9 +561,9 @@ public partial interface IGlobal
 
 
 
-public partial interface IConcatArray<T, TSelf> : IJSValueHolder<TSelf>
+public partial interface IConcatArray<TSelf, T> : IJSValueHolder<TSelf>
+    where TSelf : struct, IConcatArray<TSelf, T>
     where T : struct, IJSValueHolder<T>
-    where TSelf : struct, IConcatArray<T, TSelf>
 {
     Number length { get; }
     T this[Number n] { get; }
@@ -518,14 +571,14 @@ public partial interface IConcatArray<T, TSelf> : IJSValueHolder<TSelf>
     Array<T> slice(Number? start = null, Number? end = null);
 }
 
-public partial struct ConcatArray<T> : IConcatArray<T, ConcatArray<T>>
+public partial struct ConcatArray<T> : IConcatArray<ConcatArray<T>, T>
     where T : struct, IJSValueHolder<T>
 {
 }
 
-public partial interface IReadonlyArray<T, TSelf> : IJSValueHolder<TSelf>
+public partial interface IReadonlyArray<TSelf, T> : IJSValueHolder<TSelf>
+    where TSelf : struct, IReadonlyArray<TSelf, T>
     where T : struct, IJSValueHolder<T>
-    where TSelf : struct, IReadonlyArray<T, TSelf>
 {
     Number length { get; }
     String toString();
@@ -563,14 +616,14 @@ public partial interface IReadonlyArray<T, TSelf> : IJSValueHolder<TSelf>
     T this[Number index] { get; }
 }
 
-public partial struct ReadonlyArray<T> : IReadonlyArray<T, ReadonlyArray<T>>
+public partial struct ReadonlyArray<T> : IReadonlyArray<ReadonlyArray<T>, T>
     where T : struct, IJSValueHolder<T>
 {
 }
 
-public partial interface IArray<T, TSelf> : IJSValueHolder<TSelf>
+public partial interface IArray<TSelf, T> : IJSValueHolder<TSelf>
+    where TSelf : struct, IArray<TSelf, T>
     where T : struct, IJSValueHolder<T>
-    where TSelf : struct, IArray<T, TSelf>
 {
     Number length { get; set; }
     String toString();
@@ -611,7 +664,7 @@ public partial interface IArray<T, TSelf> : IJSValueHolder<TSelf>
     T this[Number index] { get; set; }
 }
 
-public partial struct Array<T> : IArray<T, Array<T>>
+public partial struct Array<T> : IArray<Array<T>, T>
     where T : struct, IJSValueHolder<T>
 {
 }
