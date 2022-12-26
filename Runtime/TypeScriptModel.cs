@@ -258,8 +258,7 @@ public partial interface IGlobal
     BooleanConstructor Boolean { get; set; }
 }
 
-[TypedInterface]
-public partial interface INumber
+public partial interface INumber : IJSValueHolder<Number>
 {
     String toString(Number? radix = null);
     String toFixed(Number? fractionDigits = null);
@@ -268,8 +267,7 @@ public partial interface INumber
     Number valueOf();
 }
 
-[TypedInterface]
-public partial interface INumberConstructor
+public partial interface INumberConstructor : ITypedConstructor<NumberConstructor, Number>
 {
     Number New(Any? value = null);
     Number Call(Any? value = null);
@@ -281,9 +279,26 @@ public partial interface INumberConstructor
     Number POSITIVE_INFINITY { get; }
 }
 
+public partial struct Number : INumber { }
+public partial struct NumberConstructor : INumberConstructor
+{
+    public static NumberConstructor Instance => GlobalCache.Number;
+}
+
 public partial interface IGlobal
 {
     NumberConstructor Number { get; set; }
+}
+
+public partial interface IGlobalCache
+{
+    static abstract NumberConstructor Number { get; }
+}
+
+public partial class GlobalCache : IGlobalCache
+{
+    //TODO: implement generated
+    public static NumberConstructor Number { get { return new NumberConstructor(); } }
 }
 
 //TODO: Add import types and template strings array
@@ -942,6 +957,14 @@ public interface IJSValueHolder<TSelf> where TSelf : struct, IJSValueHolder<TSel
     public static abstract implicit operator JSValue(TSelf? value);
 }
 
+public interface ITypedConstructor<TSelf, TObject> : IJSValueHolder<TSelf>
+    where TSelf : struct, ITypedConstructor<TSelf, TObject>
+    where TObject : struct, IJSValueHolder<TObject>
+{
+    static abstract TSelf Instance { get; }
+}
+
+
 public interface IFunction<TSelf> : IJSValueHolder<TSelf>
     where TSelf : struct, IFunction<TSelf>
 {
@@ -960,6 +983,18 @@ sealed class TypedInterfaceAttribute : Attribute
     public TypedInterfaceAttribute(string? name = null)
     {
         Name = name;
+    }
+}
+
+[AttributeUsage(AttributeTargets.Struct, Inherited = false)]
+sealed class TypedConstructorAttribute<T> : Attribute
+{
+    public Type ConstructorType { get; init; }
+
+    [SetsRequiredMembers]
+    public TypedConstructorAttribute()
+    {
+        ConstructorType = typeof(T);
     }
 }
 

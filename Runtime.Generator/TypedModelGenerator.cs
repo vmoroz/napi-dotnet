@@ -120,6 +120,7 @@ namespace {namespaceName}
                 {
                     if (member is IPropertySymbol propertySymbol)
                     {
+                        if (propertySymbol.IsStatic) { continue; }
                         bool isWritable = propertySymbol.SetMethod != null;
                         string typeName = ToDisplayString(propertySymbol.Type);
 
