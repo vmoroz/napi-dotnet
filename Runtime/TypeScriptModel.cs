@@ -1,3 +1,5 @@
+using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace NodeApi.EcmaScript;
@@ -37,12 +39,8 @@ namespace NodeApi.EcmaScript;
 
 //TODO: We can use tuple types to represent in-place object types. E.g TsObject<(TsString foo, TsOptional<TsString> bar)>
 
-public partial struct PropertyDescriptorMap : IPropertyDescriptorMap<PropertyDescriptorMap>
-{
-}
-
-public partial interface IGlobal<TSelf> : IJSValueHolder<TSelf>
-    where TSelf : struct, IGlobal<TSelf>
+[TypedInterface]
+public partial interface IGlobal
 {
     Number NaN { get; set; }
     Number Infinity { get; set; }
@@ -55,10 +53,6 @@ public partial interface IGlobal<TSelf> : IJSValueHolder<TSelf>
     String decodeURIComponent(String value);
     String encodeURI(String value);
     String encodeURIComponent(OneOf<String, Number, Boolean> value);
-}
-
-public partial struct Global : IGlobal<Global>
-{
 }
 
 public static class ExtensionMethods
@@ -127,15 +121,11 @@ public static class ExtensionMethods
         => JSNativeApi.CallAsConstructor(thisValue, arg0, arg1, arg2, args.Select(a => (JSValue)a).ToArray());
 }
 
-public partial interface ISymbol<TSelf> : IJSValueHolder<TSelf>
-    where TSelf : struct, ISymbol<TSelf>
+[TypedInterface]
+public partial interface ISymbol
 {
     String toString();
     Symbol valueOf();
-}
-
-public partial struct Symbol : ISymbol<Symbol>
-{
 }
 
 // declare type PropertyKey = string | number | symbol;
@@ -150,8 +140,8 @@ public partial struct PropertyKey : IJSValueHolder<PropertyKey>
     public static explicit operator Symbol(PropertyKey value) => (Symbol)value._value;
 }
 
-public interface IPropertyDescriptor<TSelf> : IJSValueHolder<TSelf>
-    where TSelf : struct, IPropertyDescriptor<TSelf>
+[TypedInterface]
+public partial interface IPropertyDescriptor
 {
     Boolean? configurable { get; set; }
     Boolean? enumerable { get; set; }
@@ -161,22 +151,14 @@ public interface IPropertyDescriptor<TSelf> : IJSValueHolder<TSelf>
     Function<Any, Void>? set { get; set; }
 }
 
-public partial interface IPropertyDescriptorMap<TSelf> : IJSValueHolder<TSelf>
-    where TSelf : struct, IPropertyDescriptorMap<TSelf>
+[TypedInterface]
+public partial interface IPropertyDescriptorMap
 {
     PropertyDescriptor this[PropertyKey key] { get; set; }
 }
 
-public partial struct PropertyDescriptor : IPropertyDescriptor<PropertyDescriptor>
-{
-}
-
-public partial struct Nullable<T> : IJSValueHolder<Nullable<T>>
-{
-}
-
-public partial interface IObject<TSelf> : IJSValueHolder<TSelf>
-    where TSelf : struct, IObject<TSelf>
+[TypedInterface]
+public partial interface IObject
 {
     Function constructor { get; set; }
     String toString();
@@ -187,49 +169,8 @@ public partial interface IObject<TSelf> : IJSValueHolder<TSelf>
     Boolean propertyIsEnumerable(PropertyKey key);
 }
 
-// interface Object
-public partial struct Object : IObject<Object>
-{
-}
-
-public partial struct Global
-{
-    public static Global Instance => (Global)JSValue.Global;
-}
-
-/**
- * Marker for contextual 'this' type
- */
-// interface ThisType<T> { }
-public partial struct ThisType<T> : IJSValueHolder<ThisType<T>>
-{
-}
-
-public partial struct Intersect<T1, T2> : IJSValueHolder<Intersect<T1, T2>>
-{
-}
-
-public partial struct Readonly<T> : IJSValueHolder<Readonly<T>>
-{
-}
-
-public interface IJSValueHolder<TSelf> where TSelf : struct, IJSValueHolder<TSelf>
-{
-    public static abstract explicit operator TSelf(JSValue value);
-    public static abstract implicit operator JSValue(TSelf value);
-
-    // Map Undefined to Nullable
-    public static abstract explicit operator TSelf?(JSValue value);
-    public static abstract implicit operator JSValue(TSelf? value);
-}
-
-public interface IFunction<TSelf> : IJSValueHolder<TSelf>
-    where TSelf : struct, IFunction<TSelf>
-{
-}
-
-public partial interface IObjectConstructor<TSelf> : IJSValueHolder<TSelf>
-    where TSelf : struct, IObjectConstructor<TSelf>
+[TypedInterface]
+public partial interface IObjectConstructor
 {
     Object New(Any? value);
     Any Call();
@@ -251,17 +192,13 @@ public partial interface IObjectConstructor<TSelf> : IJSValueHolder<TSelf>
     Array<String> keys(Object obj);
 }
 
-public partial struct ObjectConstructor : IObjectConstructor<ObjectConstructor>
-{
-}
-
-public partial interface IGlobal<TSelf>
+public partial interface IGlobal
 {
     ObjectConstructor Object { get; set; }
 }
 
-public partial interface IString<TSelf> : IJSValueHolder<TSelf>
-    where TSelf : struct, IString<TSelf>
+[TypedInterface]
+public partial interface IString
 {
     String toString();
     String charAt(Number index);
@@ -288,12 +225,8 @@ public partial interface IString<TSelf> : IJSValueHolder<TSelf>
     String this[Number index] { get; }
 }
 
-public partial struct String : IString<String>
-{
-}
-
-public partial interface IStringConstructor<TSelf> : IJSValueHolder<TSelf>
-    where TSelf : struct, IStringConstructor<TSelf>
+[TypedInterface]
+public partial interface IStringConstructor
 {
     String New(Any? value = null);
     String Call(Any? value = null);
@@ -301,35 +234,23 @@ public partial interface IStringConstructor<TSelf> : IJSValueHolder<TSelf>
     String fromCharCode(params Number[] codes);
 }
 
-public partial struct StringConstructor : IStringConstructor<StringConstructor>
-{
-}
-
-public partial interface IGlobal<TSelf>
+public partial interface IGlobal
 {
     StringConstructor String { get; set; }
 }
 
-public partial interface IBoolean<TSelf> : IJSValueHolder<TSelf>
-    where TSelf : struct, IBoolean<TSelf>
+[TypedInterface]
+public partial interface IBoolean
 {
     Boolean valueOf();
 }
 
-public partial struct Boolean : IBoolean<Boolean>
-{
-}
-
-public partial interface IBooleanConstructor<TSelf> : IJSValueHolder<TSelf>
-    where TSelf : struct, IBooleanConstructor<TSelf>
+[TypedInterface]
+public partial interface IBooleanConstructor
 {
     Boolean New(Any? value = null);
     Boolean Call<T>(T? value) where T : struct, IJSValueHolder<T>;
     Boolean prototype { get; }
-}
-
-public partial struct BooleanConstructor : IBooleanConstructor<BooleanConstructor>
-{
 }
 
 public partial interface IGlobal
@@ -337,8 +258,8 @@ public partial interface IGlobal
     BooleanConstructor Boolean { get; set; }
 }
 
-public partial interface INumber<TSelf> : IJSValueHolder<TSelf>
-    where TSelf : struct, INumber<TSelf>
+[TypedInterface]
+public partial interface INumber
 {
     String toString(Number? radix = null);
     String toFixed(Number? fractionDigits = null);
@@ -347,12 +268,8 @@ public partial interface INumber<TSelf> : IJSValueHolder<TSelf>
     Number valueOf();
 }
 
-public partial struct Number : INumber<Number>
-{
-}
-
-public partial interface INumberConstructor<TSelf> : IJSValueHolder<TSelf>
-    where TSelf : struct, INumberConstructor<TSelf>
+[TypedInterface]
+public partial interface INumberConstructor
 {
     Number New(Any? value = null);
     Number Call(Any? value = null);
@@ -364,10 +281,6 @@ public partial interface INumberConstructor<TSelf> : IJSValueHolder<TSelf>
     Number POSITIVE_INFINITY { get; }
 }
 
-public partial struct NumberConstructor : INumberConstructor<NumberConstructor>
-{
-}
-
 public partial interface IGlobal
 {
     NumberConstructor Number { get; set; }
@@ -375,8 +288,8 @@ public partial interface IGlobal
 
 //TODO: Add import types and template strings array
 
-public partial interface IMath<TSelf> : IJSValueHolder<TSelf>
-    where TSelf : struct, IMath<TSelf>
+[TypedInterface]
+public partial interface IMath
 {
     Number E { get; }
     Number LN10 { get; }
@@ -406,17 +319,13 @@ public partial interface IMath<TSelf> : IJSValueHolder<TSelf>
     Number tan(Number x);
 }
 
-public partial struct Math : IMath<Math>
-{
-}
-
 public partial interface IGlobal
 {
     Math Math { get; set; }
 }
 
-public partial interface IDate<TSelf> : IJSValueHolder<TSelf>
-    where TSelf : struct, IDate<TSelf>
+[TypedInterface]
+public partial interface IDate
 {
     String toString();
     String toDateString();
@@ -463,12 +372,8 @@ public partial interface IDate<TSelf> : IJSValueHolder<TSelf>
     String toJSON(Any? key = null);
 }
 
-public partial struct Date : IDate<Date>
-{
-}
-
-public partial interface IDateConstructor<TSelf> : IJSValueHolder<TSelf>
-    where TSelf : struct, IDateConstructor<TSelf>
+[TypedInterface]
+public partial interface IDateConstructor
 {
     Date New();
     Date New(Number value);
@@ -479,10 +384,6 @@ public partial interface IDateConstructor<TSelf> : IJSValueHolder<TSelf>
     Number parse(string s);
     Number UTC(Number year, Number monthIndex, Number? date = null, Number? hours = null, Number? minutes = null, Number? seconds = null, Number? ms = null);
     Number now();
-}
-
-public partial struct DateConstructor : IDateConstructor<DateConstructor>
-{
 }
 
 public partial interface IGlobal
@@ -512,8 +413,8 @@ public partial struct RegExpExecArray : IRegExpExecArray<RegExpExecArray>
 {
 }
 
-public partial interface IRegExp<TSelf> : IJSValueHolder<TSelf>
-    where TSelf : struct, IRegExp<TSelf>
+[TypedInterface]
+public partial interface IRegExp
 {
     Nullable<RegExpExecArray> exec(String value);
     Boolean test(String value);
@@ -524,23 +425,14 @@ public partial interface IRegExp<TSelf> : IJSValueHolder<TSelf>
     Number lastIndex { get; set; }
 }
 
-public partial struct RegExp : IRegExp<RegExp>
-{
-}
-
-
-public partial interface IRegExpConstructor<TSelf> : IJSValueHolder<TSelf>
-    where TSelf : struct, IRegExpConstructor<TSelf>
+[TypedInterface]
+public partial interface IRegExpConstructor
 {
     RegExp New(OneOf<RegExp, String> pattern);
     RegExp New(String pattern, String? flags = null);
     RegExp Call(OneOf<RegExp, String> pattern);
     RegExp Call(String pattern, String? flags = null);
     RegExp prototype { get; }
-}
-
-public partial struct RegExpConstructor : IRegExpConstructor<RegExpConstructor>
-{
 }
 
 public partial interface IGlobal
@@ -1166,3 +1058,56 @@ public partial struct Any : IJSValueHolder<Any>
 public partial struct Unknown : IJSValueHolder<Unknown>
 {
 }
+
+/**
+ * Marker for contextual 'this' type
+ */
+// interface ThisType<T> { }
+public partial struct ThisType<T> : IJSValueHolder<ThisType<T>>
+{
+}
+
+public partial struct Intersect<T1, T2> : IJSValueHolder<Intersect<T1, T2>>
+{
+}
+
+public partial struct Readonly<T> : IJSValueHolder<Readonly<T>>
+{
+}
+
+public interface IJSValueHolder<TSelf> where TSelf : struct, IJSValueHolder<TSelf>
+{
+    public static abstract explicit operator TSelf(JSValue value);
+    public static abstract implicit operator JSValue(TSelf value);
+
+    // Map Undefined to Nullable
+    public static abstract explicit operator TSelf?(JSValue value);
+    public static abstract implicit operator JSValue(TSelf? value);
+}
+
+public interface IFunction<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IFunction<TSelf>
+{
+}
+
+public partial struct Nullable<T> : IJSValueHolder<Nullable<T>>
+{
+}
+
+[AttributeUsage(AttributeTargets.Interface, Inherited = false, AllowMultiple = true)]
+sealed class TypedInterfaceAttribute : Attribute
+{
+    public string? Name { get; init; }
+
+    [SetsRequiredMembers]
+    public TypedInterfaceAttribute(string? name = null)
+    {
+        Name = name;
+    }
+}
+
+// To avoid conflicts with types in the System namespace
+public partial struct Boolean { }
+public partial struct Object { }
+public partial struct Math { }
+public partial struct String { }
