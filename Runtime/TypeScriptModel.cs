@@ -1,6 +1,4 @@
 using System.Linq;
-using NodeApi.EcmaScript;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace NodeApi.EcmaScript;
 
@@ -898,6 +896,20 @@ public partial interface ITypedPropertyDescriptor<TSelf, T> : IJSValueHolder<TSe
 }
 
 //TODO: Add Promise
+
+public partial interface IArrayLike<TSelf, T> : IJSValueHolder<TSelf>
+    where TSelf : struct, IArrayLike<TSelf, T>
+    where T : struct, IJSValueHolder<T>
+{
+    Number length { get; }
+    T this[Number index] { get; }
+}
+
+public partial struct ArrayLike<T> : IArrayLike<ArrayLike<T>, T>
+    where T : struct, IJSValueHolder<T>
+{
+}
+
 //TODO: Add the utility types
 
 public partial interface IArrayBuffer<TSelf> : IJSValueHolder<TSelf>
@@ -998,8 +1010,92 @@ public partial interface IGlobal
     DataViewConstructor DataView { get; set; }
 }
 
+public partial interface ITypedArray<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, ITypedArray<TSelf>
+{
+    Number BYTES_PER_ELEMENT { get; }
+    ArrayBuffer buffer { get; }
+    Number byteLength { get; }
+    Number byteOffset { get; }
+    TSelf copyWithin(Number target, Number start, Number? end = null);
+    Boolean every(Function<Number /*value*/, Number /*index*/, TSelf /*array*/, Unknown> predicate, Any? thisArg = null);
+    TSelf fill(Number value, Number? start = null, Number? end = null);
+    TSelf filter(Function<Number /*value*/, Number /*index*/, TSelf /*array*/, Any> predicate, Any? thisArg = null);
+    Number? find(Function<Number /*value*/, Number /*index*/, TSelf /*array*/, Boolean> predicate, Any? thisArg = null);
+    Number findIndex(Function<Number /*value*/, Number /*index*/, TSelf /*array*/, Boolean> predicate, Any? thisArg = null);
+    Void forEach(Function<Number /*value*/, Number /*index*/, TSelf /*array*/, Void> callbackfn, Any? thisArg = null);
+    Number indexOf(Number searchElement, Number? fromIndex = null);
+    String join(String? separator = null);
+    Number lastIndexOf(Number searchElement, Number? fromIndex = null);
+    Number length { get; }
+    TSelf map(Function<Number /*value*/, Number /*index*/, TSelf /*array*/, Number> callbackfn, Any? thisArg = null);
+    Number reduce(Function<Number /*previousValue*/, Number /*currentValue*/, Number/*currentIndex*/, TSelf /*array*/, Number> callbackfn);
+    Number reduce(Function<Number /*previousValue*/, Number /*currentValue*/, Number/*currentIndex*/, TSelf /*array*/, Number> callbackfn, Number initialValue);
+    U reduce<U>(Function<U /*previousValue*/, Number /*currentValue*/, Number /*currentIndex*/, TSelf /*array*/, U> callbackfn, U initialValue)
+        where U : struct, IJSValueHolder<U>;
+    Number reduceRight(Function<Number /*previousValue*/, Number /*currentValue*/, Number/*currentIndex*/, TSelf /*array*/, Number> callbackfn);
+    Number reduceRight(Function<Number /*previousValue*/, Number /*currentValue*/, Number/*currentIndex*/, TSelf /*array*/, Number> callbackfn, Number initialValue);
+    U reduceRight<U>(Function<Number /*previousValue*/, Number /*currentValue*/, Number/*currentIndex*/, TSelf /*array*/, U> callbackfn, U initialValue)
+        where U : struct, IJSValueHolder<U>;
+    TSelf reverse();
+    Void set(ArrayLike<Number> array, Number? offset = null);
+    TSelf slice(Number? start = null, Number? end = null);
+    Boolean some(Function<Number /*value*/, Number /*index*/, TSelf /*array*/, Unknown> predicate, Any? thisArg = null);
+    TSelf sort(Function<Number /*a*/, Number /*b*/, Number>? compareFn = null);
+    TSelf subarray(Number? begin = null, Number? end = null);
+    String toLocaleString();
+    String toString();
+    TSelf valueOf();
+    Number this[Number index] { get; set; }
+}
 
+public partial interface ITypedArrayConstructor<TSelf, TTypedArray> : IJSValueHolder<TSelf>
+    where TSelf : struct, ITypedArrayConstructor<TSelf, TTypedArray>
+    where TTypedArray : struct, ITypedArray<TTypedArray>
+{
+    TTypedArray prototype { get; }
+    TTypedArray New(Number length);
+    TTypedArray New(OneOf<ArrayLike<Number>, ArrayBuffer> array);
+    TTypedArray New(ArrayBuffer buffer, Number? byteOffset = null, Number? length = null);
+    Number BYTES_PER_ELEMENT { get; }
+    TTypedArray of(params Number[] items);
+    TTypedArray from(ArrayLike<Number> arrayLike);
+    TTypedArray from<T>(ArrayLike<T> arrayLike, Function<T /*v*/, Number /*k*/, Number> mapfn, Any? thisArg = null)
+        where T : struct, IJSValueHolder<T>;
+}
 
+public partial struct Int8Array : ITypedArray<Int8Array> { }
+public partial struct Uint8Array : ITypedArray<Uint8Array> { }
+public partial struct Uint8ClampedArray : ITypedArray<Uint8ClampedArray> { }
+public partial struct Int16Array : ITypedArray<Int16Array> { }
+public partial struct Uint16Array : ITypedArray<Uint16Array> { }
+public partial struct Int32Array : ITypedArray<Int32Array> { }
+public partial struct Uint32Array : ITypedArray<Uint32Array> { }
+public partial struct Float32Array : ITypedArray<Float32Array> { }
+public partial struct Float64Array : ITypedArray<Float64Array> { }
+
+public partial struct Int8ArrayConstructor : ITypedArrayConstructor<Int8ArrayConstructor, Int8Array> { }
+public partial struct Uint8ArrayConstructor : ITypedArrayConstructor<Uint8ArrayConstructor, Int8Array> { }
+public partial struct Uint8ClampedArrayConstructor : ITypedArrayConstructor<Uint8ClampedArrayConstructor, Uint8ClampedArray> { }
+public partial struct Int16ArrayConstructor : ITypedArrayConstructor<Int16ArrayConstructor, Int16Array> { }
+public partial struct Uint16ArrayConstructor : ITypedArrayConstructor<Uint16ArrayConstructor, Int16Array> { }
+public partial struct Int32ArrayConstructor : ITypedArrayConstructor<Int32ArrayConstructor, Int32Array> { }
+public partial struct Uint32ArrayConstructor : ITypedArrayConstructor<Uint32ArrayConstructor, Int32Array> { }
+public partial struct Float32ArrayConstructor : ITypedArrayConstructor<Float32ArrayConstructor, Float32Array> { }
+public partial struct Float64ArrayConstructor : ITypedArrayConstructor<Float64ArrayConstructor, Float64Array> { }
+
+public partial interface IGlobal
+{
+    Int8ArrayConstructor Int8Array { get; set; }
+    Uint8ArrayConstructor Uint8Array { get; set; }
+    Uint8ClampedArrayConstructor Uint8ClampedArray { get; set; }
+    Int16ArrayConstructor Int16Array { get; set; }
+    Uint16ArrayConstructor Uint16Array { get; set; }
+    Int32ArrayConstructor Int32Array { get; set; }
+    Uint32ArrayConstructor Uint32Array { get; set; }
+    Float32ArrayConstructor Float32Array { get; set; }
+    Float64ArrayConstructor Float64Array { get; set; }
+}
 
 public partial class NameTable
 {
@@ -1012,10 +1108,6 @@ public partial struct OneOf<T1, T2> : IJSValueHolder<OneOf<T1, T2>>
 }
 
 public partial struct OneOf<T1, T2, T3> : IJSValueHolder<OneOf<T1, T2, T3>>
-{
-}
-
-public partial struct Number : IJSValueHolder<Number>
 {
 }
 
