@@ -258,7 +258,8 @@ public partial interface IGlobal
     BooleanConstructor Boolean { get; set; }
 }
 
-public partial interface INumber : IJSValueHolder<Number>
+public partial interface INumber<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, INumber<TSelf>
 {
     String toString(Number? radix = null);
     String toFixed(Number? fractionDigits = null);
@@ -279,7 +280,9 @@ public partial interface INumberConstructor : ITypedConstructor<NumberConstructo
     Number POSITIVE_INFINITY { get; }
 }
 
-public partial struct Number : INumber { }
+//TODO: implement different types for primitives and objects for primitives
+//public partial struct @number : INumber<@number> { }
+public partial struct Number : INumber<Number> { }
 public partial struct NumberConstructor : INumberConstructor
 {
     public static NumberConstructor Instance => GlobalCache.Number;
