@@ -436,109 +436,7 @@ public class StructCodeGenerator
 
             foreach (var interfaceSymbol in _structSymbol.AllInterfaces)
             {
-                foreach (var member in interfaceSymbol.GetMembers())
-                {
-                    if (member is IPropertySymbol propertySymbol)
-                    {
-                        if (propertySymbol.IsStatic)
-                        {
-                            continue;
-                        }
-
-                        bool isReadonly = propertySymbol.SetMethod == null;
-                        string typeName = ToDisplayString(propertySymbol.Type);
-                        string propertyName = propertySymbol.Name;
-
-                        if (propertySymbol.Parameters.Length == 0)
-                        {
-                            _nameTable.Add(propertySymbol.Name);
-
-                            if (isReadonly)
-                            {
-                                s += $$"""
-                                    public static {{typeName}} {{propertyName}}
-                                        => ({{typeName}})((JSValue){{structName}}.Instance).GetProperty(NameTable.{{propertyName}});
-                                    """;
-                            }
-                            else
-                            {
-                                s += $$"""
-                                    public static {{typeName}} {{propertyName}}
-                                    {
-                                        get => ({{typeName}})((JSValue){{structName}}.Instance).GetProperty(NameTable.{{propertyName}});
-                                        set => ((JSValue){{structName}}.Instance).SetProperty(NameTable.{{propertyName}}, value);
-                                    }
-                                    """;
-                            }
-                        }
-                        else if (propertySymbol.Parameters.Length == 1)
-                        {
-                            continue;
-                        }
-                        s++;
-                    }
-                    else if (member is IMethodSymbol methodSymbol)
-                    {
-                        if (methodSymbol.MethodKind != MethodKind.Ordinary)
-                        {
-                            continue;
-                        }
-
-                        string methodName = methodSymbol.Name;
-                        _nameTable.Add(methodName);
-
-                        string genericArgs = "";
-                        string typeContraints = "";
-                        if (methodSymbol.IsGenericMethod)
-                        {
-                            genericArgs = "<" + string.Join(", ", methodSymbol.TypeParameters.Select(p => ToDisplayString(p))) + ">";
-
-                            foreach (ITypeParameterSymbol p in methodSymbol.TypeParameters)
-                            {
-                                if (p.HasValueTypeConstraint)
-                                {
-                                    string constraintTypes = string.Join(", ", p.ConstraintTypes.Select(c => ToDisplayString(c)));
-                                    typeContraints += $$"""
-                                            where {{ToDisplayString(p)}} : struct, {{constraintTypes}}
-                                        """;
-                                }
-                            }
-                        }
-
-                        string parameters = string.Join(", ", methodSymbol.Parameters.Select(p => ToDisplayString(p.Type)
-                            + " "
-                            + p.Name
-                            + (p.HasExplicitDefaultValue ? " = " + (p.ExplicitDefaultValue is object o ? o.ToString() : "null") : "")));
-                        string returnTypeName = ToDisplayString(methodSymbol.ReturnType);
-                        if (methodName == "New")
-                        {
-                            string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
-                            s += $$"""
-                                public {{targetName}}{{genericArgs}}({{parameters}}){{typeContraints}}
-                                    => _value = ((JSValue){{structName}}.Instance).CallAsConstructor({{args}});
-                                """;
-                        }
-                        else if (methodName == "Call")
-                        {
-                            string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
-                            args = args.Length > 0 ? ", " + args : "";
-                            s += $$"""
-                                public static {{returnTypeName}} Call{{genericArgs}}({{parameters}}){{typeContraints}}
-                                    => ({{returnTypeName}})((JSValue){{structName}}.Instance).Call(JSValue.Undefined{{args}});
-                                """;
-                        }
-                        else
-                        {
-                            string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
-                            args = args.Length > 0 ? ", " + args : "";
-                            s += $$"""
-                                public static {{returnTypeName}} {{methodName}}{{genericArgs}}({{parameters}}){{typeContraints}}
-                                    => ({{returnTypeName}})((JSValue){{structName}}.Instance).CallMethod(NameTable.{{methodName}}{{args}});
-                                """;
-                        }
-                        s++;
-                    }
-                }
+                GenerateStaticInterfaceMembers(structName, targetName, interfaceSymbol);
             }
 
             s.DecreaseIndent();
@@ -549,6 +447,113 @@ public class StructCodeGenerator
 
         FileName = fileName;
         return s.ToString();
+    }
+
+    private void GenerateStaticInterfaceMembers(string structName, string targetName, INamedTypeSymbol interfaceSymbol)
+    {
+        foreach (var member in interfaceSymbol.GetMembers())
+        {
+            if (member is IPropertySymbol propertySymbol)
+            {
+                if (propertySymbol.IsStatic)
+                {
+                    continue;
+                }
+
+                bool isReadonly = propertySymbol.SetMethod == null;
+                string typeName = ToDisplayString(propertySymbol.Type);
+                string propertyName = propertySymbol.Name;
+
+                if (propertySymbol.Parameters.Length == 0)
+                {
+                    _nameTable.Add(propertySymbol.Name);
+
+                    if (isReadonly)
+                    {
+                        _source += $$"""
+                                    public static {{typeName}} {{propertyName}}
+                                        => ({{typeName}})((JSValue){{structName}}.Instance).GetProperty(NameTable.{{propertyName}});
+                                    """;
+                    }
+                    else
+                    {
+                        _source += $$"""
+                                    public static {{typeName}} {{propertyName}}
+                                    {
+                                        get => ({{typeName}})((JSValue){{structName}}.Instance).GetProperty(NameTable.{{propertyName}});
+                                        set => ((JSValue){{structName}}.Instance).SetProperty(NameTable.{{propertyName}}, value);
+                                    }
+                                    """;
+                    }
+                }
+                else if (propertySymbol.Parameters.Length == 1)
+                {
+                    continue;
+                }
+                _source++;
+            }
+            else if (member is IMethodSymbol methodSymbol)
+            {
+                if (methodSymbol.MethodKind != MethodKind.Ordinary)
+                {
+                    continue;
+                }
+
+                string methodName = methodSymbol.Name;
+                _nameTable.Add(methodName);
+
+                string genericArgs = "";
+                string typeContraints = "";
+                if (methodSymbol.IsGenericMethod)
+                {
+                    genericArgs = "<" + string.Join(", ", methodSymbol.TypeParameters.Select(p => ToDisplayString(p))) + ">";
+
+                    foreach (ITypeParameterSymbol p in methodSymbol.TypeParameters)
+                    {
+                        if (p.HasValueTypeConstraint)
+                        {
+                            string constraintTypes = string.Join(", ", p.ConstraintTypes.Select(c => ToDisplayString(c)));
+                            typeContraints += $$"""
+                                            where {{ToDisplayString(p)}} : struct, {{constraintTypes}}
+                                        """;
+                        }
+                    }
+                }
+
+                string parameters = string.Join(", ", methodSymbol.Parameters.Select(p => ToDisplayString(p.Type)
+                    + " "
+                    + p.Name
+                    + (p.HasExplicitDefaultValue ? " = " + (p.ExplicitDefaultValue is object o ? o.ToString() : "null") : "")));
+                string returnTypeName = ToDisplayString(methodSymbol.ReturnType);
+                if (methodName == "New")
+                {
+                    string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
+                    _source += $$"""
+                                public {{targetName}}{{genericArgs}}({{parameters}}){{typeContraints}}
+                                    => _value = ((JSValue){{structName}}.Instance).CallAsConstructor({{args}});
+                                """;
+                }
+                else if (methodName == "Call")
+                {
+                    string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
+                    args = args.Length > 0 ? ", " + args : "";
+                    _source += $$"""
+                                public static {{returnTypeName}} Call{{genericArgs}}({{parameters}}){{typeContraints}}
+                                    => ({{returnTypeName}})((JSValue){{structName}}.Instance).Call(JSValue.Undefined{{args}});
+                                """;
+                }
+                else
+                {
+                    string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
+                    args = args.Length > 0 ? ", " + args : "";
+                    _source += $$"""
+                                public static {{returnTypeName}} {{methodName}}{{genericArgs}}({{parameters}}){{typeContraints}}
+                                    => ({{returnTypeName}})((JSValue){{structName}}.Instance).CallMethod(NameTable.{{methodName}}{{args}});
+                                """;
+                }
+                _source++;
+            }
+        }
     }
 
     private void GenerateInstanceInGlobalCache(string structName)
