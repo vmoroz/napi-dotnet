@@ -666,11 +666,11 @@ public class StructCodeGenerator
             nameTable.Add(propertySymbol.Name);
             if (isReadonly)
             {
-                GenerateReadonlyProperty(s, propertyType, propertyName);
+                GenerateReadonlyProperty(propertyType, propertyName);
             }
             else
             {
-                GenerateWritableProperty(s, propertyType, propertyName);
+                GenerateWritableProperty(propertyType, propertyName);
             }
         }
         else if (propertySymbol.Parameters.Length == 1)
@@ -699,25 +699,23 @@ public class StructCodeGenerator
         return s;
     }
 
-    private static SourceBuilder GenerateWritableProperty(SourceBuilder s, string propertyType, string propertyName)
+    private void GenerateReadonlyProperty(string propertyType, string propertyName)
     {
-        s += $$"""
+        _source += $$"""
+            public {{propertyType}} {{propertyName}}
+                => ({{propertyType}})_value.GetProperty(NameTable.{{propertyName}});
+            """;
+    }
+
+    private void GenerateWritableProperty(string propertyType, string propertyName)
+    {
+        _source += $$"""
             public {{propertyType}} {{propertyName}}
             {
                 get => ({{propertyType}})_value.GetProperty(NameTable.{{propertyName}});
                 set => _value.SetProperty(NameTable.{{propertyName}}, value);
             }
             """;
-        return s;
-    }
-
-    private static SourceBuilder GenerateReadonlyProperty(SourceBuilder s, string propertyType, string propertyName)
-    {
-        s += $$"""
-                                public {{propertyType}} {{propertyName}}
-                                    => ({{propertyType}})_value.GetProperty(NameTable.{{propertyName}});
-                                """;
-        return s;
     }
 
     private string ToDisplayString(ITypeSymbol typeSymbol)
