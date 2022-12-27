@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Dynamic;
 using System.Linq;
 
 namespace NodeApi.TypedModel;
@@ -292,13 +293,39 @@ public partial interface IGlobal
     NumberConstructor Number { get; set; }
 }
 
-public static partial class GlobalCache
+public partial class GlobalCache
 {
-    //TODO: implement generated
-    //public static BooleanConstructor Boolean { get { return new NumberConstructor(); } }
-    //public static StringConstructor String { get { return new NumberConstructor(); } }
-    public static NumberConstructor Number { get { return new NumberConstructor(); } }
-    //public static DateConstructor Date { get { return new NumberConstructor(); } }
+    private JSValue?[] _items = new JSValue?[CacheId.Count];
+
+    private static JSValue Get(CacheId cacheId)
+    {
+        if (JSValueScope.Data is JSValueScopeData data)
+        {
+            JSValue?[] items = data.GlobalCache._items;
+            if (items[cacheId.Index] is JSValue value && !value.Scope.IsDisposed)
+            {
+                return value;
+            }
+
+            value = cacheId.Creator();
+            items[cacheId.Index] = value;
+            return value;
+        }
+        throw new Exception("Cannot get JSValueScopeData");
+    }
+
+    public static NumberConstructor Number => (NumberConstructor)Get(CacheId.Number);
+    //public static StringConstructor String => Get(CacheId.String);
+
+    public class CacheId
+    {
+        public required int Index { get; init; }
+        public required Func<JSValue> Creator { get; init; }
+
+        public static int Count { get; private set; }
+        public static CacheId Number { get; } = new CacheId { Index = Count++, Creator = () => JSValue.Global.GetProperty(NameTable.Number) };
+        public static CacheId String { get; } = new CacheId { Index = Count++, Creator = () => JSValue.Global.GetProperty(NameTable.String) };
+    }
 }
 
 //TODO: Add import types and template strings array
