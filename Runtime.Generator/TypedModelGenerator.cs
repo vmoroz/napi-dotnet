@@ -595,6 +595,8 @@ public class StructCodeGenerator
 
     private void GenerateMethod(IMethodSymbol methodSymbol)
     {
+        string returnType = ToDisplayString(methodSymbol.ReturnType);
+
         string methodName = methodSymbol.Name;
         _nameTable.Add(methodName);
 
@@ -609,20 +611,18 @@ public class StructCodeGenerator
                 if (p.HasValueTypeConstraint)
                 {
                     string constraintTypes = string.Join(", ", p.ConstraintTypes.Select(c => ToDisplayString(c)));
-                    typeContraints += $$"""
-                                        where {{ToDisplayString(p)}} : struct, {{constraintTypes}}
-                                    """;
+                    typeContraints += $"\n    where {ToDisplayString(p)} : struct, {constraintTypes}";
                 }
             }
         }
 
-        string parameters = string.Join(", ", methodSymbol.Parameters.Select(p
-            => ToDisplayString(p.Type)
-            + " "
-            + p.Name
-            + (p.HasExplicitDefaultValue ? " = " + (p.ExplicitDefaultValue is object o ? o.ToString() : "null") : "")));
-        string returnType = ToDisplayString(methodSymbol.ReturnType);
+        Func<IParameterSymbol, string?> getDefaultValue = p => p.HasExplicitDefaultValue ? p.ExplicitDefaultValue?.ToString() : null;
+        Func<IParameterSymbol, string> assignDefault = p => (getDefaultValue(p) is string value) ? " = " + value : "";
+        Func<IParameterSymbol, string> parameterString = p => $"{ToDisplayString(p.Type)} {p.Name}{assignDefault(p)}";
+        string parameters = string.Join(", ", methodSymbol.Parameters.Select(p => parameterString(p)));
+
         string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
+
         if (methodName == "New")
         {
             GenerateNewMethod(returnType, genericArgs, parameters, typeContraints, args);
