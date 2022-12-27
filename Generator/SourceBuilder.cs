@@ -9,7 +9,7 @@ internal class SourceBuilder : SourceText
     private readonly StringBuilder _text;
     private string _currentIndent = string.Empty;
 
-    public SourceBuilder(string indent = "\t")
+    public SourceBuilder(string indent = "\t", bool autoIndent = true)
     {
         _text = new StringBuilder();
         Indent = indent;
@@ -31,6 +31,8 @@ internal class SourceBuilder : SourceText
 
     public string Indent { get; }
 
+    public bool AutoIndent { get; }
+
     public void IncreaseIndent()
     {
         _currentIndent += Indent;
@@ -48,21 +50,31 @@ internal class SourceBuilder : SourceText
 
     private void AppendLine(string line)
     {
-        if (line.StartsWith("}"))
+        if (string.IsNullOrEmpty(line))
         {
-            DecreaseIndent();
+            _text.AppendLine("");
+            return;
         }
 
-        if (line.Length > 0)
+        string[] lines = line.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+        foreach (string text in lines)
         {
-            line = _currentIndent + line;
-        }
+            if (line.StartsWith("}") && AutoIndent)
+            {
+                DecreaseIndent();
+            }
 
-        _text.AppendLine(line);
+            if (text.Length > 0)
+            {
+                _text.Append(_currentIndent);
+            }
 
-        if (line.EndsWith("{"))
-        {
-            IncreaseIndent();
+            _text.AppendLine(text);
+
+            if (line.EndsWith("{") && AutoIndent)
+            {
+                IncreaseIndent();
+            }
         }
     }
 

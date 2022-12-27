@@ -1,14 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
-using System.Reflection.Metadata;
-using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
+using NodeApi.Generator;
 
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
@@ -74,6 +72,8 @@ public class AutoNotifyGenerator : ISourceGenerator
             throw new Exception("Struct must be in a namespace");
         }
 
+        var s = new SourceBuilder("    ");
+
         string namespaceName = structSymbol.ContainingNamespace.ToDisplayString();
         string structName = structSymbol.Name;
         string fileName = structName;
@@ -90,23 +90,25 @@ public class AutoNotifyGenerator : ISourceGenerator
 
         uniqueFileNames.Add(fileName);
 
-        // begin building the generated source
-        StringBuilder source = new StringBuilder($@"
-namespace {namespaceName}
-{{
-    public partial struct {structName}
-    {{
-        private JSValue _value;
+        s += $$"""
+            namespace {{namespaceName}};
 
-        public static explicit operator {structName}(JSValue value) => new {structName} {{ _value = value }};
-        public static implicit operator JSValue({structName} value) => value._value;
+            public partial struct {{structName}}
+            {
+                private JSValue _value;
 
-        // Map Undefined to Nullable
-        public static explicit operator {structName}?(JSValue value)
-            => value.TypeOf() != JSValueType.Undefined ? ({structName})value : null;
-        public static implicit operator JSValue({structName}? value)
-            => value is {structName} notNullValue ? notNullValue._value : JSValue.Undefined;
-");
+                public static explicit operator {{structName}}(JSValue value) => new {{structName}} { _value = value };
+                public static implicit operator JSValue({{structName}} value) => value._value;
+
+                // Map Undefined to Nullable
+                public static explicit operator {{structName}}?(JSValue value)
+                    => value.TypeOf() != JSValueType.Undefined ? ({{structName}})value : null;
+
+                public static implicit operator JSValue({{structName}}? value)
+                    => value is {{structName}} notNullValue ? notNullValue._value : JSValue.Undefined;
+
+            """;
+        s.IncreaseIndent();
 
         foreach (var interfaceSymbol in structSymbol.AllInterfaces)
         {
@@ -122,44 +124,47 @@ namespace {namespaceName}
                     if (propertySymbol.IsStatic) { continue; }
                     bool isWritable = propertySymbol.SetMethod != null;
                     string typeName = ToDisplayString(propertySymbol.Type);
+                    string propertyName = propertySymbol.Name;
 
                     if (propertySymbol.Parameters.Length == 0)
                     {
                         nameTable.Add(propertySymbol.Name);
 
-                        source.Append($@"
-        public {typeName} {propertySymbol.Name}
-        {{
-            get => ({typeName})_value.GetProperty(NameTable.{propertySymbol.Name});");
-
+                        s += $$"""
+                            public {{typeName}} {{propertyName}}
+                            {
+                                get => ({{typeName}})_value.GetProperty(NameTable.{{propertyName}});
+                            """;
                         if (isWritable)
                         {
-                            source.Append($@"
-            set => _value.SetProperty(NameTable.{propertySymbol.Name}, value);");
+                            s += $$"""
+                                set => _value.SetProperty(NameTable.{{propertyName}}, value);
+                            """;
                         }
+                        s += $$"""
+                            }
 
-                        source.Append(@"
-        }
-");
+                            """;
                     }
                     else if (propertySymbol.Parameters.Length == 1)
                     {
                         string parameterName = propertySymbol.Parameters[0].Name;
                         string parameterType = ToDisplayString(propertySymbol.Parameters[0].Type);
-                        source.Append($@"
-        public {typeName} this[{parameterType} {parameterName}]
-        {{
-            get => ({typeName})_value.GetProperty({parameterName});");
-
+                        s += $$"""
+                            public {{typeName}} this[{{parameterType}} {{parameterName}}]
+                            {
+                                get => ({{typeName}})_value.GetProperty({{parameterName}});
+                            """;
                         if (isWritable)
                         {
-                            source.Append($@"
-            set => _value.SetProperty({parameterName}, value);");
+                            s += $$"""
+                                set => _value.SetProperty({{parameterName}}, value);
+                            """;
                         }
+                        s += $$"""
+                            }
 
-                        source.Append(@"
-        }
-");
+                            """;
                     }
                 }
                 else if (member is IMethodSymbol methodSymbol)
@@ -183,8 +188,9 @@ namespace {namespaceName}
                             if (p.HasValueTypeConstraint)
                             {
                                 string constraintTypes = string.Join(", ", p.ConstraintTypes.Select(c => ToDisplayString(c)));
-                                typeContraints += $@"
-            where {ToDisplayString(p)} : struct, {constraintTypes}";
+                                typeContraints += $$"""
+                                        where {{ToDisplayString(p)}} : struct, {{constraintTypes}}
+                                    """;
                             }
                         }
                     }
@@ -198,39 +204,40 @@ namespace {namespaceName}
                     if (methodName == "New")
                     {
                         string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
-                        source.Append($@"
-        public {returnTypeName} {methodName}{genericArgs}({parameters}){typeContraints}
-            => ({returnTypeName})_value.CallAsConstructor({args});
-");
+                        s += $$"""
+                            public {{returnTypeName}} New{{genericArgs}}({{parameters}}){{typeContraints}}
+                                => ({{returnTypeName}})_value.CallAsConstructor({{args}});
+
+                            """;
                     }
                     else if (methodName == "Call")
                     {
                         string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
                         args = args.Length > 0 ? ", " + args : "";
-                        source.Append($@"
-        public {returnTypeName} {methodName}{genericArgs}({parameters}){typeContraints}
-            => ({returnTypeName})_value.Call(_value{args});
-");
+                        s += $$"""
+                            public {{returnTypeName}} Call{{genericArgs}}({{parameters}}){{typeContraints}}
+                                => ({{returnTypeName}})_value.Call(_value{{args}});
+
+                            """;
                     }
                     else
                     {
                         string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
                         args = args.Length > 0 ? ", " + args : "";
-                        source.Append($@"
-        public {returnTypeName} {methodName}{genericArgs}({parameters}){typeContraints}
-            => ({returnTypeName})_value.CallMethod(NameTable.{methodName}{args});
-");
+                        s += $$"""
+                            public {{returnTypeName}} {{methodName}}{{genericArgs}}({{parameters}}){{typeContraints}}
+                                => ({{returnTypeName}})_value.CallMethod(NameTable.{{methodName}}{{args}});
+
+                            """;
                     }
                 }
             }
         }
 
-        source.Append(@"
-    }
-}
-");
+        s.DecreaseIndent();
+        s += "}";
 
-        return (source.ToString(), fileName);
+        return (s.ToString(), fileName);
     }
 
     private (string structSource, string fileName) ProcessTypedInterface(
