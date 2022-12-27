@@ -143,7 +143,6 @@ public class AutoNotifyGenerator : ISourceGenerator
                         }
                         s += $$"""
                             }
-
                             """;
                     }
                     else if (propertySymbol.Parameters.Length == 1)
@@ -163,9 +162,9 @@ public class AutoNotifyGenerator : ISourceGenerator
                         }
                         s += $$"""
                             }
-
                             """;
                     }
+                    s++;
                 }
                 else if (member is IMethodSymbol methodSymbol)
                 {
@@ -207,7 +206,6 @@ public class AutoNotifyGenerator : ISourceGenerator
                         s += $$"""
                             public {{returnTypeName}} New{{genericArgs}}({{parameters}}){{typeContraints}}
                                 => ({{returnTypeName}})_value.CallAsConstructor({{args}});
-
                             """;
                     }
                     else if (methodName == "Call")
@@ -217,7 +215,6 @@ public class AutoNotifyGenerator : ISourceGenerator
                         s += $$"""
                             public {{returnTypeName}} Call{{genericArgs}}({{parameters}}){{typeContraints}}
                                 => ({{returnTypeName}})_value.Call(_value{{args}});
-
                             """;
                     }
                     else
@@ -227,9 +224,9 @@ public class AutoNotifyGenerator : ISourceGenerator
                         s += $$"""
                             public {{returnTypeName}} {{methodName}}{{genericArgs}}({{parameters}}){{typeContraints}}
                                 => ({{returnTypeName}})_value.CallMethod(NameTable.{{methodName}}{{args}});
-
                             """;
                     }
+                    s++;
                 }
             }
         }
