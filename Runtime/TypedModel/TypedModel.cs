@@ -299,7 +299,7 @@ public partial class GlobalCache
     [ThreadStatic] private static GlobalCache? s_instance;
     private JSValue?[] _entries = new JSValue?[CacheId.Count];
 
-    private static JSValue Get(CacheId cacheId)
+    private static JSValue GetValue(CacheId cacheId)
     {
         if (s_instance is null)
         {
@@ -319,19 +319,24 @@ public partial class GlobalCache
 
     private partial class CacheId
     {
-        public required int Index { get; init; }
-        public required Func<JSValue> CreateValue { get; init; }
+        public readonly int Index;
+        public readonly Func<JSValue> CreateValue;
 
         public static int Count { get; private set; }
 
-        //TODO: Generate
-        public static CacheId Number { get; } = new CacheId { Index = Count++, CreateValue = () => JSValue.Global.GetProperty(NameTable.Number) };
-        public static CacheId String { get; } = new CacheId { Index = Count++, CreateValue = () => JSValue.Global.GetProperty(NameTable.String) };
+        private CacheId(string propertyName)
+        {
+            Index = Count++;
+            CreateValue = () => JSValue.Global.GetProperty(propertyName);
+        }
     }
+}
 
-    //TODO: Generate
-    public static NumberConstructor Number => (NumberConstructor)Get(CacheId.Number);
-    //public static StringConstructor String => Get(CacheId.String);
+//TODO: Generate
+public partial class GlobalCache
+{
+    public static NumberConstructor Number => (NumberConstructor)GetValue(CacheId.Number);
+    private partial class CacheId { public static readonly CacheId Number = new CacheId(nameof(Number)); }
 }
 
 //TODO: Add import types and template strings array
