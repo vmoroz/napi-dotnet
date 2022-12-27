@@ -383,7 +383,7 @@ public class TypedModelGenerator : ISourceGenerator
 
                     public partial class GlobalCache
                     {
-                        public static {{structName}} {{globalPropertyName}} => (NumberConstructor)GetValue(CacheId.{{globalPropertyName}});
+                        public static {{structName}} {{globalPropertyName}} => ({{structName}})GetValue(CacheId.{{globalPropertyName}});
                         private partial class CacheId { public static readonly CacheId {{globalPropertyName}} = new CacheId(nameof({{globalPropertyName}})); }
                     }
                     """;

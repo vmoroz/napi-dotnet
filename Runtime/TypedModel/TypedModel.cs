@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Dynamic;
 using System.Linq;
 
 namespace NodeApi.TypedModel;
@@ -40,20 +39,23 @@ namespace NodeApi.TypedModel;
 
 //TODO: We can use tuple types to represent in-place object types. E.g TsObject<(TsString foo, TsOptional<TsString> bar)>
 
+//TODO: Lower case types:
+//TODO: any, bigint, boolean, never, null, number, object, string, symbol, undefined, unknown, void
+
 [TypedInterface]
 public partial interface IGlobal
 {
-    Number NaN { get; set; }
-    Number Infinity { get; set; }
-    Any eval(String text);
-    Number parseInt(String value, Number? radix = null);
-    Number parseFloat(String value);
-    Boolean isNaN(Number value);
-    Boolean isFinite(Number value);
-    String decodeURI(String value);
-    String decodeURIComponent(String value);
-    String encodeURI(String value);
-    String encodeURIComponent(OneOf<String, Number, Boolean> value);
+    @number NaN { get; set; }
+    @number Infinity { get; set; }
+    @any eval(@string text);
+    @number parseInt(@string value, @number? radix = null);
+    @number parseFloat(@string value);
+    @boolean isNaN(@number value);
+    @boolean isFinite(@number value);
+    @string decodeURI(@string value);
+    @string decodeURIComponent(@string value);
+    @string encodeURI(@string value);
+    @string encodeURIComponent(OneOf<@string, @number, @boolean> value);
 }
 
 public static class ExtensionMethods
@@ -122,34 +124,38 @@ public static class ExtensionMethods
         => JSNativeApi.CallAsConstructor(thisValue, arg0, arg1, arg2, args.Select(a => (JSValue)a).ToArray());
 }
 
-[TypedInterface]
-public partial interface ISymbol
+public partial interface ISymbol<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, ISymbol<TSelf>
 {
-    String toString();
-    Symbol valueOf();
+    @string toString();
+    @symbol valueOf();
 }
 
+public partial struct @symbol : ISymbol<@symbol> { }
+public partial struct Symbol : ISymbol<Symbol> { }
+
+//TODO: There must be a better way to declare type
 // declare type PropertyKey = string | number | symbol;
 public partial struct PropertyKey : IJSValueHolder<PropertyKey>
 {
-    public static implicit operator PropertyKey(String value) => new PropertyKey { _value = (JSValue)value };
-    public static implicit operator PropertyKey(Number value) => new PropertyKey { _value = (JSValue)value };
+    public static implicit operator PropertyKey(@string value) => new PropertyKey { _value = (JSValue)value };
+    public static implicit operator PropertyKey(@number value) => new PropertyKey { _value = (JSValue)value };
     public static implicit operator PropertyKey(Symbol value) => new PropertyKey { _value = (JSValue)value };
 
-    public static explicit operator String(PropertyKey value) => (String)value._value;
-    public static explicit operator Number(PropertyKey value) => (Number)value._value;
+    public static explicit operator @string(PropertyKey value) => (@string)value._value;
+    public static explicit operator @number(PropertyKey value) => (@number)value._value;
     public static explicit operator Symbol(PropertyKey value) => (Symbol)value._value;
 }
 
 [TypedInterface]
 public partial interface IPropertyDescriptor
 {
-    Boolean? configurable { get; set; }
-    Boolean? enumerable { get; set; }
-    Boolean? writable { get; set; }
-    Any? value { get; set; }
-    Function<Any>? get { get; set; }
-    Function<Any, Void>? set { get; set; }
+    @boolean? configurable { get; set; }
+    @boolean? enumerable { get; set; }
+    @boolean? writable { get; set; }
+    @any? value { get; set; }
+    Function<@any>? get { get; set; }
+    Function<@any, @void>? set { get; set; }
 }
 
 [TypedInterface]
@@ -158,101 +164,116 @@ public partial interface IPropertyDescriptorMap
     PropertyDescriptor this[PropertyKey key] { get; set; }
 }
 
-[TypedInterface]
-public partial interface IObject
+public partial interface IObject<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IObject<TSelf>
 {
     Function constructor { get; set; }
-    String toString();
-    String toLocaleString();
-    Object valueOf();
-    Boolean hasOwnProperty(PropertyKey key);
-    Boolean isPrototypeOf(Object value);
-    Boolean propertyIsEnumerable(PropertyKey key);
+    @string toString();
+    @string toLocaleString();
+    @object valueOf();
+    @boolean hasOwnProperty(PropertyKey key);
+    @boolean isPrototypeOf(@object value);
+    @boolean propertyIsEnumerable(PropertyKey key);
 }
 
-[TypedInterface]
-public partial interface IObjectConstructor
+public partial interface IObjectConstructor : ITypedConstructor<ObjectConstructor, Object>
 {
-    Object New(Any? value);
-    Any Call();
-    Any Call(Any value);
+    Object New(@any? value);
+    @any Call();
+    @any Call(@any value);
     Object prototype { get; }
-    Any getPrototypeOf(Any obj);
-    PropertyDescriptor? getOwnPropertyDescriptor(Any obj, PropertyKey key);
-    Array<String> getOwnPropertyNames(Any obj);
-    Any create(Nullable<Object> obj);
-    Any create(Nullable<Object> obj, Intersect<PropertyDescriptorMap, ThisType<Any>> properties);
-    T defineProperty<T>(T obj, PropertyKey key, Intersect<PropertyDescriptor, ThisType<Any>> attributes) where T : struct, IJSValueHolder<T>;
-    T defineProperties<T>(T obj, Intersect<PropertyDescriptorMap, ThisType<Any>> properties) where T : struct, IJSValueHolder<T>;
+    @any getPrototypeOf(@any obj);
+    PropertyDescriptor? getOwnPropertyDescriptor(@any obj, PropertyKey key);
+    Array<@string> getOwnPropertyNames(@any obj);
+    @any create(Nullable<@object> obj);
+    @any create(Nullable<@object> obj, Intersect<PropertyDescriptorMap, ThisType<@any>> properties);
+    T defineProperty<T>(T obj, PropertyKey key, Intersect<PropertyDescriptor, ThisType<@any>> attributes) where T : struct, IJSValueHolder<T>;
+    T defineProperties<T>(T obj, Intersect<PropertyDescriptorMap, ThisType<@any>> properties) where T : struct, IJSValueHolder<T>;
     T seal<T>(T obj) where T : struct, IJSValueHolder<T>;
     Readonly<T> freeze<T>(T obj) where T : struct, IJSValueHolder<T>;
     T preventExtensions<T>(T obj) where T : struct, IJSValueHolder<T>;
-    Boolean isSealed(Any obj);
-    Boolean isFrozen(Any obj);
-    Boolean isExtensible(Any obj);
-    Array<String> keys(Object obj);
+    @boolean isSealed(@any obj);
+    @boolean isFrozen(@any obj);
+    @boolean isExtensible(@any obj);
+    Array<@string> keys(@object obj);
 }
+
+public partial struct @object : IObject<@object> { }
+public partial struct Object : IObject<Object> { }
+
+[GenerateInstanceInGlobalCache(nameof(Object))]
+public partial struct ObjectConstructor : IObjectConstructor { }
 
 public partial interface IGlobal
 {
     ObjectConstructor Object { get; set; }
 }
 
-[TypedInterface]
-public partial interface IString
+public partial interface IString<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IString<TSelf>
 {
-    String toString();
-    String charAt(Number index);
-    String charCodeAt(Number index);
-    String concat(params String[] strings);
-    Number indexOf(String searchString, Number? position);
-    Number lastIndexOf(String searchString, Number? position);
-    Number localeCompare(String value);
+    @string toString();
+    @string charAt(@number index);
+    @string charCodeAt(@number index);
+    @string concat(params @string[] strings);
+    @number indexOf(@string searchString, @number? position);
+    @number lastIndexOf(@string searchString, @number? position);
+    @number localeCompare(@string value);
 
-    Nullable<RegExpMatchArray> match(OneOf<String, RegExp> regexp);
-    String replace(OneOf<String, RegExp> searchValue, String replaceValue);
-    String replace(OneOf<String, RegExp> searchValue, Function<String /*substring*/ /*...args: any[]*/, String> replacer);
-    Number search(OneOf<String, RegExp> regexp);
-    String slice(Number? start = null, Number? end = null);
-    Array<String> split(OneOf<String, RegExp> separator, Number? limit = null);
-    String substring(Number start, Number? end = null);
-    String toLowerCase();
-    String toLocaleLowerCase(OneOf<String, Array<String>>? locales = null);
-    String toUpperCase();
-    String toLocaleUpperCase(OneOf<String, Array<String>>? locales = null);
-    String trim();
-    Number length { get; }
-    String valueOf();
-    String this[Number index] { get; }
+    Nullable<RegExpMatchArray> match(OneOf<@string, RegExp> regexp);
+    @string replace(OneOf<@string, RegExp> searchValue, @string replaceValue);
+    @string replace(OneOf<@string, RegExp> searchValue, Function<@string /*substring*/ /*...args: any[]*/, @string> replacer);
+    @number search(OneOf<@string, RegExp> regexp);
+    @string slice(@number? start = null, @number? end = null);
+    Array<@string> split(OneOf<@string, RegExp> separator, @number? limit = null);
+    @string substring(@number start, @number? end = null);
+    @string toLowerCase();
+    @string toLocaleLowerCase(OneOf<@string, Array<@string>>? locales = null);
+    @string toUpperCase();
+    @string toLocaleUpperCase(OneOf<@string, Array<@string>>? locales = null);
+    @string trim();
+    @number length { get; }
+    @string valueOf();
+    @string this[@number index] { get; }
 }
 
-[TypedInterface]
-public partial interface IStringConstructor
+public partial interface IStringConstructor : ITypedConstructor<StringConstructor, String>
 {
-    String New(Any? value = null);
-    String Call(Any? value = null);
+    String New(@any? value = null);
+    @string Call(@any? value = null);
     String prototype { get; }
-    String fromCharCode(params Number[] codes);
+    @string fromCharCode(params @number[] codes);
 }
+
+public partial struct @string : IString<@string> { }
+public partial struct String : IString<String> { }
+
+[GenerateInstanceInGlobalCache(nameof(String))]
+public partial struct StringConstructor : IStringConstructor { }
 
 public partial interface IGlobal
 {
     StringConstructor String { get; set; }
 }
 
-[TypedInterface]
-public partial interface IBoolean
+public partial interface IBoolean<TSelf> : IJSValueHolder<TSelf>
+    where TSelf : struct, IBoolean<TSelf>
 {
-    Boolean valueOf();
+    @boolean valueOf();
 }
 
-[TypedInterface]
-public partial interface IBooleanConstructor
+public partial interface IBooleanConstructor : ITypedConstructor<BooleanConstructor, Boolean>
 {
-    Boolean New(Any? value = null);
-    Boolean Call<T>(T? value) where T : struct, IJSValueHolder<T>;
+    Boolean New(@any? value = null);
+    @boolean Call<T>(T? value) where T : struct, IJSValueHolder<T>;
     Boolean prototype { get; }
 }
+
+public partial struct @boolean : IBoolean<@boolean> { }
+public partial struct Boolean : IBoolean<Boolean> { }
+
+[GenerateInstanceInGlobalCache(nameof(Boolean))]
+public partial struct BooleanConstructor : IBooleanConstructor { }
 
 public partial interface IGlobal
 {
@@ -262,17 +283,17 @@ public partial interface IGlobal
 public partial interface INumber<TSelf> : IJSValueHolder<TSelf>
     where TSelf : struct, INumber<TSelf>
 {
-    String toString(@number? radix = null);
-    String toFixed(@number? fractionDigits = null);
-    String toExponential(@number? fractionDigits = null);
-    String toPrecision(@number? precision = null);
+    @string toString(@number? radix = null);
+    @string toFixed(@number? fractionDigits = null);
+    @string toExponential(@number? fractionDigits = null);
+    @string toPrecision(@number? precision = null);
     @number valueOf();
 }
 
 public partial interface INumberConstructor : ITypedConstructor<NumberConstructor, Number>
 {
-    Number New(Any? value = null);
-    @number Call(Any? value = null);
+    Number New(@any? value = null);
+    @number Call(@any? value = null);
     Number prototype { get; }
     @number MAX_VALUE { get; }
     @number MIN_VALUE { get; }
@@ -297,32 +318,32 @@ public partial interface IGlobal
 [TypedInterface]
 public partial interface IMath
 {
-    Number E { get; }
-    Number LN10 { get; }
-    Number LN2 { get; }
-    Number LOG2E { get; }
-    Number LOG10E { get; }
-    Number PI { get; }
-    Number SQRT1_2 { get; }
-    Number SQRT2 { get; }
-    Number abs(Number x);
-    Number acos(Number x);
-    Number asin(Number x);
-    Number atan(Number x);
-    Number atan2(Number y, Number x);
-    Number ceil(Number x);
-    Number cos(Number x);
-    Number exp(Number x);
-    Number floor(Number x);
-    Number log(Number x);
-    Number max(params Number[] values);
-    Number min(params Number[] values);
-    Number pow(Number x, Number y);
-    Number random();
-    Number round(Number x);
-    Number sin(Number x);
-    Number sqrt(Number x);
-    Number tan(Number x);
+    @number E { get; }
+    @number LN10 { get; }
+    @number LN2 { get; }
+    @number LOG2E { get; }
+    @number LOG10E { get; }
+    @number PI { get; }
+    @number SQRT1_2 { get; }
+    @number SQRT2 { get; }
+    @number abs(@number x);
+    @number acos(@number x);
+    @number asin(@number x);
+    @number atan(@number x);
+    @number atan2(@number y, @number x);
+    @number ceil(@number x);
+    @number cos(@number x);
+    @number exp(@number x);
+    @number floor(@number x);
+    @number log(@number x);
+    @number max(params @number[] values);
+    @number min(params @number[] values);
+    @number pow(@number x, @number y);
+    @number random();
+    @number round(@number x);
+    @number sin(@number x);
+    @number sqrt(@number x);
+    @number tan(@number x);
 }
 
 public partial interface IGlobal
@@ -333,63 +354,63 @@ public partial interface IGlobal
 [TypedInterface]
 public partial interface IDate
 {
-    String toString();
-    String toDateString();
-    String toTimeString();
-    String toLocaleString();
-    String toLocaleDateString();
-    String toLocaleTimeString();
-    Number valueOf();
-    Number getTime();
-    Number getFullYear();
-    Number getUTCFullYear();
-    Number getMonth();
-    Number getUTCMonth();
-    Number getDate();
-    Number getUTCDate();
-    Number getDay();
-    Number getUTCDay();
-    Number getHours();
-    Number getUTCHours();
-    Number getMinutes();
-    Number getUTCMinutes();
-    Number getSeconds();
-    Number getUTCSeconds();
-    Number getMilliseconds();
-    Number getUTCMilliseconds();
-    Number getTimezoneOffset();
-    Number setTime(Number time);
-    Number setMilliseconds(Number ms);
-    Number setUTCMilliseconds(Number ms);
-    Number setSeconds(Number sec, Number? ms = null);
-    Number setUTCSeconds(Number sec, Number? ms = null);
-    Number setMinutes(Number min, Number? sec = null, Number? ms = null);
-    Number setUTCMinutes(Number min, Number? sec = null, Number? ms = null);
-    Number setHours(Number hours, Number? min = null, Number? sec = null, Number? ms = null);
-    Number setUTCHours(Number hours, Number? min = null, Number? sec = null, Number? ms = null);
-    Number setDate(Number date);
-    Number setUTCDate(Number date);
-    Number setMonth(Number month, Number? date);
-    Number setUTCMonth(Number month, Number? date = null);
-    Number setFullYear(Number year, Number? month = null, Number? date = null);
-    Number setUTCFullYear(Number year, Number? month = null, Number? date = null);
-    String toUTCString();
-    String toISOString();
-    String toJSON(Any? key = null);
+    @string toString();
+    @string toDateString();
+    @string toTimeString();
+    @string toLocaleString();
+    @string toLocaleDateString();
+    @string toLocaleTimeString();
+    @number valueOf();
+    @number getTime();
+    @number getFullYear();
+    @number getUTCFullYear();
+    @number getMonth();
+    @number getUTCMonth();
+    @number getDate();
+    @number getUTCDate();
+    @number getDay();
+    @number getUTCDay();
+    @number getHours();
+    @number getUTCHours();
+    @number getMinutes();
+    @number getUTCMinutes();
+    @number getSeconds();
+    @number getUTCSeconds();
+    @number getMilliseconds();
+    @number getUTCMilliseconds();
+    @number getTimezoneOffset();
+    @number setTime(@number time);
+    @number setMilliseconds(@number ms);
+    @number setUTCMilliseconds(@number ms);
+    @number setSeconds(@number sec, @number? ms = null);
+    @number setUTCSeconds(@number sec, @number? ms = null);
+    @number setMinutes(@number min, @number? sec = null, @number? ms = null);
+    @number setUTCMinutes(@number min, @number? sec = null, @number? ms = null);
+    @number setHours(@number hours, @number? min = null, @number? sec = null, @number? ms = null);
+    @number setUTCHours(@number hours, @number? min = null, @number? sec = null, @number? ms = null);
+    @number setDate(@number date);
+    @number setUTCDate(@number date);
+    @number setMonth(@number month, @number? date);
+    @number setUTCMonth(@number month, @number? date = null);
+    @number setFullYear(@number year, @number? month = null, @number? date = null);
+    @number setUTCFullYear(@number year, @number? month = null, @number? date = null);
+    @string toUTCString();
+    @string toISOString();
+    @string toJSON(@any? key = null);
 }
 
 [TypedInterface]
 public partial interface IDateConstructor
 {
     Date New();
-    Date New(Number value);
-    Date New(String value);
-    Date New(Number year, Number monthIndex, Number? date = null, Number? hours = null, Number? minutes = null, Number? seconds = null, Number? ms = null);
-    String Call();
+    Date New(@number value);
+    Date New(@string value);
+    Date New(@number year, @number monthIndex, @number? date = null, @number? hours = null, @number? minutes = null, @number? seconds = null, @number? ms = null);
+    @string Call();
     Date prototype { get; }
-    Number parse(String s);
-    Number UTC(Number year, Number monthIndex, Number? date = null, Number? hours = null, Number? minutes = null, Number? seconds = null, Number? ms = null);
-    Number now();
+    @number parse(@string s);
+    @number UTC(@number year, @number monthIndex, @number? date = null, @number? hours = null, @number? minutes = null, @number? seconds = null, @number? ms = null);
+    @number now();
 }
 
 public partial interface IGlobal
@@ -397,22 +418,22 @@ public partial interface IGlobal
     DateConstructor Date { get; set; }
 }
 
-public partial interface IRegExpMatchArray<TSelf> : IArray<TSelf, String>
+public partial interface IRegExpMatchArray<TSelf> : IArray<TSelf, @string>
     where TSelf : struct, IRegExpMatchArray<TSelf>
 {
-    Number? index { get; set; }
-    String? input { get; set; }
+    @number? index { get; set; }
+    @string? input { get; set; }
 }
 
 public partial struct RegExpMatchArray : IRegExpMatchArray<RegExpMatchArray>
 {
 }
 
-public partial interface IRegExpExecArray<TSelf> : IArray<TSelf, String>
+public partial interface IRegExpExecArray<TSelf> : IArray<TSelf, @string>
     where TSelf : struct, IRegExpExecArray<TSelf>
 {
-    Number? index { get; set; }
-    String? input { get; set; }
+    @number? index { get; set; }
+    @string? input { get; set; }
 }
 
 public partial struct RegExpExecArray : IRegExpExecArray<RegExpExecArray>
@@ -422,22 +443,22 @@ public partial struct RegExpExecArray : IRegExpExecArray<RegExpExecArray>
 [TypedInterface]
 public partial interface IRegExp
 {
-    Nullable<RegExpExecArray> exec(String value);
-    Boolean test(String value);
-    String source { get; }
-    Boolean global { get; }
-    Boolean ignoreCase { get; }
-    Boolean multiline { get; }
-    Number lastIndex { get; set; }
+    Nullable<RegExpExecArray> exec(@string value);
+    @boolean test(@string value);
+    @string source { get; }
+    @boolean global { get; }
+    @boolean ignoreCase { get; }
+    @boolean multiline { get; }
+    @number lastIndex { get; set; }
 }
 
 [TypedInterface]
 public partial interface IRegExpConstructor
 {
-    RegExp New(OneOf<RegExp, String> pattern);
-    RegExp New(String pattern, String? flags = null);
-    RegExp Call(OneOf<RegExp, String> pattern);
-    RegExp Call(String pattern, String? flags = null);
+    RegExp New(OneOf<RegExp, @string> pattern);
+    RegExp New(@string pattern, @string? flags = null);
+    RegExp Call(OneOf<RegExp, @string> pattern);
+    RegExp Call(@string pattern, @string? flags = null);
     RegExp prototype { get; }
 }
 
@@ -449,17 +470,17 @@ public partial interface IGlobal
 public partial interface IError<TSelf> : IJSValueHolder<TSelf>
     where TSelf : struct, IError<TSelf>
 {
-    String name { get; set; }
-    String message { get; set; }
-    String? stack { get; set; }
+    @string name { get; set; }
+    @string message { get; set; }
+    @string? stack { get; set; }
 }
 
 public partial interface IErrorConstructor<TSelf, TError> : IJSValueHolder<TSelf>
     where TSelf : struct, IErrorConstructor<TSelf, TError>
     where TError : struct, IError<TError>
 {
-    TError New(String? message = null);
-    TError Call(String? message = null);
+    TError New(@string? message = null);
+    TError Call(@string? message = null);
     TError prototype { get; }
 }
 
@@ -493,9 +514,9 @@ public partial interface IGlobal
 public partial interface IJSON<TSelf> : IJSValueHolder<TSelf>
     where TSelf : struct, IJSON<TSelf>
 {
-    Any parse(String text, Function<Any /*this*/, String /*key*/, Any /*value*/, Any>? reviver = null);
-    String stringify(Any value, Function<Any /*this*/, String /*key*/, Any /*value*/, Any>? replacer = null, OneOf<String, Number>? space = null);
-    String stringify(Any value, Nullable<Array<OneOf<Number, String>>>? replacer = null, OneOf<String, Number>? space = null);
+    @any parse(@string text, Function<@any /*this*/, @string /*key*/, @any /*value*/, @any>? reviver = null);
+    @string stringify(@any value, Function<@any /*this*/, @string /*key*/, @any /*value*/, @any>? replacer = null, OneOf<@string, @number>? space = null);
+    @string stringify(@any value, Nullable<Array<OneOf<@number, @string>>>? replacer = null, OneOf<@string, @number>? space = null);
 }
 
 public partial struct JSON : IJSON<JSON>
@@ -511,40 +532,40 @@ public partial interface IReadonlyArray<TSelf, T> : IJSValueHolder<TSelf>
     where TSelf : struct, IReadonlyArray<TSelf, T>
     where T : struct, IJSValueHolder<T>
 {
-    Number length { get; }
-    String toString();
-    String toLocaleString();
+    @number length { get; }
+    @string toString();
+    @string toLocaleString();
     Array<T> concat(params ConcatArray<T>[] items);
     Array<T> concat(params OneOf<T, ConcatArray<T>>[] items);
-    String join(String? separator = null);
-    Array<T> slice(Number? start = null, Number? end = null);
-    Number indexOf(T searchElement, Number? fromIndex = null);
-    Number lastIndexOf(T searchElement, Number? fromIndex = null);
+    @string join(@string? separator = null);
+    Array<T> slice(@number? start = null, @number? end = null);
+    @number indexOf(T searchElement, @number? fromIndex = null);
+    @number lastIndexOf(T searchElement, @number? fromIndex = null);
     //TODO: How to simulate extends?
     //TODO: How to simulate "is"?
     //Original: every<S extends T>(predicate: (value: T, index: number, array: readonly T[]) => value is S, thisArg?: any): this is readonly S[];
-    Boolean every<S>(Function<T /*value*/, Number /*index*/, ReadonlyArray<T> /*array*/, Unknown> predicate, Any? thisArg = null)
+    @boolean every<S>(Function<T /*value*/, @number /*index*/, ReadonlyArray<T> /*array*/, @unknown> predicate, @any? thisArg = null)
         where S : struct, IJSValueHolder<S>;
-    Boolean every(Function<T /*value*/, Number /*index*/, ReadonlyArray<T> /*array*/, Unknown> predicate, Any? thisArg = null);
-    Boolean some(Function<T /*value*/, Number /*index*/, ReadonlyArray<T> /*array*/, Unknown> predicate, Any? thisArg = null);
-    Void forEach(Function<T /*value*/, Number /*index*/, ReadonlyArray<T> /*array*/, Void> callbackfn, Any? thisArg = null);
-    Array<U> map<U>(Function<T /*value*/, Number /*index*/, ReadonlyArray<T> /*array*/, U> callbackfn, Any? thisArg = null)
+    @boolean every(Function<T /*value*/, @number /*index*/, ReadonlyArray<T> /*array*/, @unknown> predicate, @any? thisArg = null);
+    @boolean some(Function<T /*value*/, @number /*index*/, ReadonlyArray<T> /*array*/, @unknown> predicate, @any? thisArg = null);
+    @void forEach(Function<T /*value*/, @number /*index*/, ReadonlyArray<T> /*array*/, @void> callbackfn, @any? thisArg = null);
+    Array<U> map<U>(Function<T /*value*/, @number /*index*/, ReadonlyArray<T> /*array*/, U> callbackfn, @any? thisArg = null)
         where U : struct, IJSValueHolder<U>;
     //TODO: How to simulate extends?
     //TODO: How to simulate "is"?
     //Original: filter<S extends T>(predicate: (value: T, index: number, array: readonly T[]) => value is S, thisArg?: any): S[];
-    Array<S> filter<S>(Function<T /*value*/, Number /*index*/, ReadonlyArray<T> /*array*/, Unknown> predicate, Any? thisArg = null)
+    Array<S> filter<S>(Function<T /*value*/, @number /*index*/, ReadonlyArray<T> /*array*/, @unknown> predicate, @any? thisArg = null)
         where S : struct, IJSValueHolder<S>;
-    Array<T> filter(Function<T /*value*/, Number /*index*/, ReadonlyArray<T> /*array*/, Unknown> predicate, Any? thisArg = null);
-    T reduce(Function<T /*previousValue*/, T /*currentValue*/, Number /*currentIndex*/, ReadonlyArray<T> /*array*/, T> callbackfn);
-    T reduce(Function<T /*previousValue*/, T /*currentValue*/, Number /*currentIndex*/, ReadonlyArray<T> /*array*/, T> callbackfn, T initialValue);
-    U reduce<U>(Function<U /*previousValue*/, T /*currentValue*/, Number /*currentIndex*/, ReadonlyArray<T> /*array*/, U> callbackfn, U initialValue)
+    Array<T> filter(Function<T /*value*/, @number /*index*/, ReadonlyArray<T> /*array*/, @unknown> predicate, @any? thisArg = null);
+    T reduce(Function<T /*previousValue*/, T /*currentValue*/, @number /*currentIndex*/, ReadonlyArray<T> /*array*/, T> callbackfn);
+    T reduce(Function<T /*previousValue*/, T /*currentValue*/, @number /*currentIndex*/, ReadonlyArray<T> /*array*/, T> callbackfn, T initialValue);
+    U reduce<U>(Function<U /*previousValue*/, T /*currentValue*/, @number /*currentIndex*/, ReadonlyArray<T> /*array*/, U> callbackfn, U initialValue)
         where U : struct, IJSValueHolder<U>;
-    T reduceRight(Function<T /*previousValue*/, T /*currentValue*/, Number /*currentIndex*/, ReadonlyArray<T> /*array*/, T> callbackfn);
-    T reduceRight(Function<T /*previousValue*/, T /*currentValue*/, Number /*currentIndex*/, ReadonlyArray<T> /*array*/, T> callbackfn, T initialValue);
-    U reduceRight<U>(Function<U /*previousValue*/, T /*currentValue*/, Number /*currentIndex*/, ReadonlyArray<T> /*array*/, U> callbackfn, U initialValue)
+    T reduceRight(Function<T /*previousValue*/, T /*currentValue*/, @number /*currentIndex*/, ReadonlyArray<T> /*array*/, T> callbackfn);
+    T reduceRight(Function<T /*previousValue*/, T /*currentValue*/, @number /*currentIndex*/, ReadonlyArray<T> /*array*/, T> callbackfn, T initialValue);
+    U reduceRight<U>(Function<U /*previousValue*/, T /*currentValue*/, @number /*currentIndex*/, ReadonlyArray<T> /*array*/, U> callbackfn, U initialValue)
         where U : struct, IJSValueHolder<U>;
-    T this[Number index] { get; }
+    T this[@number index] { get; }
 }
 
 public partial struct ReadonlyArray<T> : IReadonlyArray<ReadonlyArray<T>, T>
@@ -556,10 +577,10 @@ public partial interface IConcatArray<TSelf, T> : IJSValueHolder<TSelf>
     where TSelf : struct, IConcatArray<TSelf, T>
     where T : struct, IJSValueHolder<T>
 {
-    Number length { get; }
-    T this[Number n] { get; }
-    String join(String? separator = null);
-    Array<T> slice(Number? start = null, Number? end = null);
+    @number length { get; }
+    T this[@number n] { get; }
+    @string join(@string? separator = null);
+    Array<T> slice(@number? start = null, @number? end = null);
 }
 
 public partial struct ConcatArray<T> : IConcatArray<ConcatArray<T>, T>
@@ -571,43 +592,43 @@ public partial interface IArray<TSelf, T> : IJSValueHolder<TSelf>
     where TSelf : struct, IArray<TSelf, T>
     where T : struct, IJSValueHolder<T>
 {
-    Number length { get; set; }
-    String toString();
-    String toLocaleString();
+    @number length { get; set; }
+    @string toString();
+    @string toLocaleString();
     T? pop();
-    Number push(params T[] items);
+    @number push(params T[] items);
     Array<T> concat(params ConcatArray<T>[] items);
     Array<T> concat(params OneOf<T, ConcatArray<T>>[] items);
-    String join(String? separator = null);
+    @string join(@string? separator = null);
     Array<T> reverse();
     T? shift();
-    Array<T> slice(Number? start = null, Number? end = null);
+    Array<T> slice(@number? start = null, @number? end = null);
     //TODO: how to return "this"? Should it be ref?
-    Array<T> sort(Function<T /*a*/, T/*b*/, Number>? compareFn = null);
-    Array<T> splice(Number start, Number? deleteCount = null);
-    Array<T> splice(Number start, Number deleteCount, params T[] items);
-    Number unshift(params T[] items);
-    Number indexOf(T searchElement, Number? fromIndex = null);
-    Number lastIndexOf(T searchElement, Number? fromIndex = null);
-    Boolean every<S>(Function<T /*value*/, Number /*index*/, Array<T> /*array*/, Unknown> predicate, Any? thisArg = null)
+    Array<T> sort(Function<T /*a*/, T/*b*/, @number>? compareFn = null);
+    Array<T> splice(@number start, @number? deleteCount = null);
+    Array<T> splice(@number start, @number deleteCount, params T[] items);
+    @number unshift(params T[] items);
+    @number indexOf(T searchElement, @number? fromIndex = null);
+    @number lastIndexOf(T searchElement, @number? fromIndex = null);
+    @boolean every<S>(Function<T /*value*/, @number /*index*/, Array<T> /*array*/, @unknown> predicate, @any? thisArg = null)
         where S : struct, IJSValueHolder<S>;
-    Boolean every(Function<T /*value*/, Number /*index*/, Array<T> /*array*/, Unknown> predicate, Any? thisArg = null);
-    Boolean some(Function<T /*value*/, Number /*index*/, Array<T> /*array*/, Unknown> predicate, Any? thisArg = null);
-    Void forEach(Function<T /*value*/, Number /*index*/, Array<T> /*array*/, Void> callbackfn, Any? thisArg = null);
-    Array<U> map<U>(Function<T /*value*/, Number /*index*/, Array<T> /*array*/, U> callbackfn, Any? thisArg = null)
+    @boolean every(Function<T /*value*/, @number /*index*/, Array<T> /*array*/, @unknown> predicate, @any? thisArg = null);
+    @boolean some(Function<T /*value*/, @number /*index*/, Array<T> /*array*/, @unknown> predicate, @any? thisArg = null);
+    @void forEach(Function<T /*value*/, @number /*index*/, Array<T> /*array*/, @void> callbackfn, @any? thisArg = null);
+    Array<U> map<U>(Function<T /*value*/, @number /*index*/, Array<T> /*array*/, U> callbackfn, @any? thisArg = null)
         where U : struct, IJSValueHolder<U>;
-    Array<S> filter<S>(Function<T /*value*/, Number /*index*/, Array<T> /*array*/, Unknown> predicate, Any? thisArg = null)
+    Array<S> filter<S>(Function<T /*value*/, @number /*index*/, Array<T> /*array*/, @unknown> predicate, @any? thisArg = null)
         where S : struct, IJSValueHolder<S>;
-    Array<T> filter(Function<T /*value*/, Number /*index*/, Array<T> /*array*/, Unknown> predicate, Any? thisArg = null);
-    T reduce(Function<T /*previousValue*/, T /*currentValue*/, Number /*currentIndex*/, Array<T> /*array*/, T> callbackfn);
-    T reduce(Function<T /*previousValue*/, T /*currentValue*/, Number /*currentIndex*/, Array<T> /*array*/, T> callbackfn, T initialValue);
-    U reduce<U>(Function<U /*previousValue*/, T /*currentValue*/, Number /*currentIndex*/, Array<T> /*array*/, U> callbackfn, U initialValue)
+    Array<T> filter(Function<T /*value*/, @number /*index*/, Array<T> /*array*/, @unknown> predicate, @any? thisArg = null);
+    T reduce(Function<T /*previousValue*/, T /*currentValue*/, @number /*currentIndex*/, Array<T> /*array*/, T> callbackfn);
+    T reduce(Function<T /*previousValue*/, T /*currentValue*/, @number /*currentIndex*/, Array<T> /*array*/, T> callbackfn, T initialValue);
+    U reduce<U>(Function<U /*previousValue*/, T /*currentValue*/, @number /*currentIndex*/, Array<T> /*array*/, U> callbackfn, U initialValue)
         where U : struct, IJSValueHolder<U>;
-    T reduceRight(Function<T /*previousValue*/, T /*currentValue*/, Number /*currentIndex*/, Array<T> /*array*/, T> callbackfn);
-    T reduceRight(Function<T /*previousValue*/, T /*currentValue*/, Number /*currentIndex*/, Array<T> /*array*/, T> callbackfn, T initialValue);
-    U reduceRight<U>(Function<U /*previousValue*/, T /*currentValue*/, Number /*currentIndex*/, Array<T> /*array*/, U> callbackfn, U initialValue)
+    T reduceRight(Function<T /*previousValue*/, T /*currentValue*/, @number /*currentIndex*/, Array<T> /*array*/, T> callbackfn);
+    T reduceRight(Function<T /*previousValue*/, T /*currentValue*/, @number /*currentIndex*/, Array<T> /*array*/, T> callbackfn, T initialValue);
+    U reduceRight<U>(Function<U /*previousValue*/, T /*currentValue*/, @number /*currentIndex*/, Array<T> /*array*/, U> callbackfn, U initialValue)
         where U : struct, IJSValueHolder<U>;
-    T this[Number index] { get; set; }
+    T this[@number index] { get; set; }
 }
 
 public partial struct Array<T> : IArray<Array<T>, T>
@@ -618,15 +639,15 @@ public partial struct Array<T> : IArray<Array<T>, T>
 public partial interface IArrayConstructor<TSelf> : IJSValueHolder<TSelf>
     where TSelf : struct, IArrayConstructor<TSelf>
 {
-    Array<Any> New(Number? arrayLength = null);
-    Array<T> New<T>(Number arrayLength) where T : struct, IJSValueHolder<T>;
+    Array<@any> New(@number? arrayLength = null);
+    Array<T> New<T>(@number arrayLength) where T : struct, IJSValueHolder<T>;
     Array<T> New<T>(params T[] items) where T : struct, IJSValueHolder<T>;
-    Array<Any> Call(Number? arrayLength = null);
-    Array<T> Call<T>(Number arrayLength) where T : struct, IJSValueHolder<T>;
+    Array<@any> Call(@number? arrayLength = null);
+    Array<T> Call<T>(@number arrayLength) where T : struct, IJSValueHolder<T>;
     Array<T> Call<T>(params T[] items) where T : struct, IJSValueHolder<T>;
     //TODO: What does it mean that he result must be "arg is any[]"
-    Boolean isArray(Any arg);
-    Array<Any> prototype { get; }
+    @boolean isArray(@any arg);
+    Array<@any> prototype { get; }
 }
 
 public partial struct ArrayConstructor : IArrayConstructor<ArrayConstructor>
@@ -642,12 +663,12 @@ public partial interface ITypedPropertyDescriptor<TSelf, T> : IJSValueHolder<TSe
     where TSelf : struct, ITypedPropertyDescriptor<TSelf, T>
     where T : struct, IJSValueHolder<T>
 {
-    Boolean? enumerable { get; set; }
-    Boolean? configurable { get; set; }
-    Boolean? writable { get; set; }
+    @boolean? enumerable { get; set; }
+    @boolean? configurable { get; set; }
+    @boolean? writable { get; set; }
     T? value { get; set; }
     Function<T>? get { get; set; }
-    Function<T /*value*/, Void>? set { get; set; }
+    Function<T /*value*/, @void>? set { get; set; }
 }
 
 //TODO: Add Promise
@@ -656,8 +677,8 @@ public partial interface IArrayLike<TSelf, T> : IJSValueHolder<TSelf>
     where TSelf : struct, IArrayLike<TSelf, T>
     where T : struct, IJSValueHolder<T>
 {
-    Number length { get; }
-    T this[Number index] { get; }
+    @number length { get; }
+    T this[@number index] { get; }
 }
 
 public partial struct ArrayLike<T> : IArrayLike<ArrayLike<T>, T>
@@ -670,8 +691,8 @@ public partial struct ArrayLike<T> : IArrayLike<ArrayLike<T>, T>
 public partial interface IArrayBuffer<TSelf> : IJSValueHolder<TSelf>
     where TSelf : struct, IArrayBuffer<TSelf>
 {
-    Number byteLength { get; }
-    ArrayBuffer Slice(Number begin, Number? end = null);
+    @number byteLength { get; }
+    ArrayBuffer Slice(@number begin, @number? end = null);
 }
 
 public partial struct ArrayBuffer : IArrayBuffer<ArrayBuffer>
@@ -694,9 +715,9 @@ public partial interface IArrayBufferConstructor<TSelf> : IJSValueHolder<TSelf>
     where TSelf : struct, IArrayBufferConstructor<TSelf>
 {
     ArrayBuffer prototype { get; }
-    ArrayBuffer New(Number byteLength);
+    ArrayBuffer New(@number byteLength);
     //TODO: arg is ArrayBufferView
-    Boolean isView(Any arg);
+    @boolean isView(@any arg);
 }
 
 public partial struct ArrayBufferConstructor : IArrayBufferConstructor<ArrayBufferConstructor>
@@ -713,8 +734,8 @@ public partial interface IArrayBufferView<TSelf> : IJSValueHolder<TSelf>
 {
     //TODO: ArrayBufferLike
     ArrayBuffer buffer { get; set; }
-    Number byteLength { get; set; }
-    Number byteOffset { get; set; }
+    @number byteLength { get; set; }
+    @number byteOffset { get; set; }
 }
 
 public partial struct ArrayBufferView : IArrayBufferView<ArrayBufferView>
@@ -725,24 +746,24 @@ public partial interface IDataView<TSelf> : IJSValueHolder<TSelf>
     where TSelf : struct, IDataView<TSelf>
 {
     ArrayBuffer buffer { get; }
-    Number byteLength { get; }
-    Number byteOffset { get; }
-    Number getFloat32(Number byteOffset, Boolean? littleEndian = null);
-    Number getFloat64(Number byteOffset, Boolean? littleEndian = null);
-    Number getInt8(Number byteOffset);
-    Number getInt16(Number byteOffset, Boolean? littleEndian = null);
-    Number getInt32(Number byteOffset, Boolean? littleEndian = null);
-    Number getUint8(Number byteOffset);
-    Number getUint16(Number byteOffset, Boolean? littleEndian = null);
-    Number getUint32(Number byteOffset, Boolean? littleEndian = null);
-    Void setFloat32(Number byteOffset, Number value, Boolean? littleEndian = null);
-    Void setFloat64(Number byteOffset, Number value, Boolean? littleEndian = null);
-    Void setInt8(Number byteOffset, Number value);
-    Void setInt16(Number byteOffset, Number value, Boolean? littleEndian = null);
-    Void setInt32(Number byteOffset, Number value, Boolean? littleEndian = null);
-    Void setUint8(Number byteOffset, Number value);
-    Void setUint16(Number byteOffset, Number value, Boolean? littleEndian = null);
-    Void setUint32(Number byteOffset, Number value, Boolean? littleEndian = null);
+    @number byteLength { get; }
+    @number byteOffset { get; }
+    @number getFloat32(@number byteOffset, @boolean? littleEndian = null);
+    @number getFloat64(@number byteOffset, @boolean? littleEndian = null);
+    @number getInt8(@number byteOffset);
+    @number getInt16(@number byteOffset, @boolean? littleEndian = null);
+    @number getInt32(@number byteOffset, @boolean? littleEndian = null);
+    @number getUint8(@number byteOffset);
+    @number getUint16(@number byteOffset, @boolean? littleEndian = null);
+    @number getUint32(@number byteOffset, @boolean? littleEndian = null);
+    @void setFloat32(@number byteOffset, @number value, @boolean? littleEndian = null);
+    @void setFloat64(@number byteOffset, @number value, @boolean? littleEndian = null);
+    @void setInt8(@number byteOffset, @number value);
+    @void setInt16(@number byteOffset, @number value, @boolean? littleEndian = null);
+    @void setInt32(@number byteOffset, @number value, @boolean? littleEndian = null);
+    @void setUint8(@number byteOffset, @number value);
+    @void setUint16(@number byteOffset, @number value, @boolean? littleEndian = null);
+    @void setUint32(@number byteOffset, @number value, @boolean? littleEndian = null);
 }
 
 public partial struct DataView : IDataView<DataView>
@@ -753,7 +774,7 @@ public partial interface IDataViewConstructor<TSelf> : IJSValueHolder<TSelf>
     where TSelf : struct, IDataViewConstructor<TSelf>
 {
     DataView prototype { get; }
-    DataView New(ArrayBuffer buffer, Number? byteOffset = null, Number? byteLength = null);
+    DataView New(ArrayBuffer buffer, @number? byteOffset = null, @number? byteLength = null);
 }
 
 public partial struct DataViewConstructor : IDataViewConstructor<DataViewConstructor>
@@ -768,40 +789,40 @@ public partial interface IGlobal
 public partial interface ITypedArray<TSelf> : IJSValueHolder<TSelf>
     where TSelf : struct, ITypedArray<TSelf>
 {
-    Number BYTES_PER_ELEMENT { get; }
+    @number BYTES_PER_ELEMENT { get; }
     ArrayBuffer buffer { get; }
-    Number byteLength { get; }
-    Number byteOffset { get; }
-    TSelf copyWithin(Number target, Number start, Number? end = null);
-    Boolean every(Function<Number /*value*/, Number /*index*/, TSelf /*array*/, Unknown> predicate, Any? thisArg = null);
-    TSelf fill(Number value, Number? start = null, Number? end = null);
-    TSelf filter(Function<Number /*value*/, Number /*index*/, TSelf /*array*/, Any> predicate, Any? thisArg = null);
-    Number? find(Function<Number /*value*/, Number /*index*/, TSelf /*array*/, Boolean> predicate, Any? thisArg = null);
-    Number findIndex(Function<Number /*value*/, Number /*index*/, TSelf /*array*/, Boolean> predicate, Any? thisArg = null);
-    Void forEach(Function<Number /*value*/, Number /*index*/, TSelf /*array*/, Void> callbackfn, Any? thisArg = null);
-    Number indexOf(Number searchElement, Number? fromIndex = null);
-    String join(String? separator = null);
-    Number lastIndexOf(Number searchElement, Number? fromIndex = null);
-    Number length { get; }
-    TSelf map(Function<Number /*value*/, Number /*index*/, TSelf /*array*/, Number> callbackfn, Any? thisArg = null);
-    Number reduce(Function<Number /*previousValue*/, Number /*currentValue*/, Number/*currentIndex*/, TSelf /*array*/, Number> callbackfn);
-    Number reduce(Function<Number /*previousValue*/, Number /*currentValue*/, Number/*currentIndex*/, TSelf /*array*/, Number> callbackfn, Number initialValue);
-    U reduce<U>(Function<U /*previousValue*/, Number /*currentValue*/, Number /*currentIndex*/, TSelf /*array*/, U> callbackfn, U initialValue)
+    @number byteLength { get; }
+    @number byteOffset { get; }
+    TSelf copyWithin(@number target, @number start, @number? end = null);
+    @boolean every(Function<@number /*value*/, @number /*index*/, TSelf /*array*/, @unknown> predicate, @any? thisArg = null);
+    TSelf fill(@number value, @number? start = null, @number? end = null);
+    TSelf filter(Function<@number /*value*/, @number /*index*/, TSelf /*array*/, @any> predicate, @any? thisArg = null);
+    @number? find(Function<@number /*value*/, @number /*index*/, TSelf /*array*/, @boolean> predicate, @any? thisArg = null);
+    @number findIndex(Function<@number /*value*/, @number /*index*/, TSelf /*array*/, @boolean> predicate, @any? thisArg = null);
+    @void forEach(Function<@number /*value*/, @number /*index*/, TSelf /*array*/, @void> callbackfn, @any? thisArg = null);
+    @number indexOf(@number searchElement, @number? fromIndex = null);
+    @string join(@string? separator = null);
+    @number lastIndexOf(@number searchElement, @number? fromIndex = null);
+    @number length { get; }
+    TSelf map(Function<@number /*value*/, @number /*index*/, TSelf /*array*/, @number> callbackfn, @any? thisArg = null);
+    @number reduce(Function<@number /*previousValue*/, @number /*currentValue*/, @number/*currentIndex*/, TSelf /*array*/, @number> callbackfn);
+    @number reduce(Function<@number /*previousValue*/, @number /*currentValue*/, @number/*currentIndex*/, TSelf /*array*/, @number> callbackfn, @number initialValue);
+    U reduce<U>(Function<U /*previousValue*/, @number /*currentValue*/, @number /*currentIndex*/, TSelf /*array*/, U> callbackfn, U initialValue)
         where U : struct, IJSValueHolder<U>;
-    Number reduceRight(Function<Number /*previousValue*/, Number /*currentValue*/, Number/*currentIndex*/, TSelf /*array*/, Number> callbackfn);
-    Number reduceRight(Function<Number /*previousValue*/, Number /*currentValue*/, Number/*currentIndex*/, TSelf /*array*/, Number> callbackfn, Number initialValue);
-    U reduceRight<U>(Function<Number /*previousValue*/, Number /*currentValue*/, Number/*currentIndex*/, TSelf /*array*/, U> callbackfn, U initialValue)
+    @number reduceRight(Function<@number /*previousValue*/, @number /*currentValue*/, @number/*currentIndex*/, TSelf /*array*/, @number> callbackfn);
+    @number reduceRight(Function<@number /*previousValue*/, @number /*currentValue*/, @number/*currentIndex*/, TSelf /*array*/, @number> callbackfn, @number initialValue);
+    U reduceRight<U>(Function<@number /*previousValue*/, @number /*currentValue*/, @number/*currentIndex*/, TSelf /*array*/, U> callbackfn, U initialValue)
         where U : struct, IJSValueHolder<U>;
     TSelf reverse();
-    Void set(ArrayLike<Number> array, Number? offset = null);
-    TSelf slice(Number? start = null, Number? end = null);
-    Boolean some(Function<Number /*value*/, Number /*index*/, TSelf /*array*/, Unknown> predicate, Any? thisArg = null);
-    TSelf sort(Function<Number /*a*/, Number /*b*/, Number>? compareFn = null);
-    TSelf subarray(Number? begin = null, Number? end = null);
-    String toLocaleString();
-    String toString();
+    @void set(ArrayLike<@number> array, @number? offset = null);
+    TSelf slice(@number? start = null, @number? end = null);
+    @boolean some(Function<@number /*value*/, @number /*index*/, TSelf /*array*/, @unknown> predicate, @any? thisArg = null);
+    TSelf sort(Function<@number /*a*/, @number /*b*/, @number>? compareFn = null);
+    TSelf subarray(@number? begin = null, @number? end = null);
+    @string toLocaleString();
+    @string toString();
     TSelf valueOf();
-    Number this[Number index] { get; set; }
+    @number this[@number index] { get; set; }
 }
 
 public partial interface ITypedArrayConstructor<TSelf, TTypedArray> : IJSValueHolder<TSelf>
@@ -809,13 +830,13 @@ public partial interface ITypedArrayConstructor<TSelf, TTypedArray> : IJSValueHo
     where TTypedArray : struct, ITypedArray<TTypedArray>
 {
     TTypedArray prototype { get; }
-    TTypedArray New(Number length);
-    TTypedArray New(OneOf<ArrayLike<Number>, ArrayBuffer> array);
-    TTypedArray New(ArrayBuffer buffer, Number? byteOffset = null, Number? length = null);
-    Number BYTES_PER_ELEMENT { get; }
-    TTypedArray of(params Number[] items);
-    TTypedArray from(ArrayLike<Number> arrayLike);
-    TTypedArray from<T>(ArrayLike<T> arrayLike, Function<T /*v*/, Number /*k*/, Number> mapfn, Any? thisArg = null)
+    TTypedArray New(@number length);
+    TTypedArray New(OneOf<ArrayLike<@number>, ArrayBuffer> array);
+    TTypedArray New(ArrayBuffer buffer, @number? byteOffset = null, @number? length = null);
+    @number BYTES_PER_ELEMENT { get; }
+    TTypedArray of(params @number[] items);
+    TTypedArray from(ArrayLike<@number> arrayLike);
+    TTypedArray from<T>(ArrayLike<T> arrayLike, Function<T /*v*/, @number /*k*/, @number> mapfn, @any? thisArg = null)
         where T : struct, IJSValueHolder<T>;
 }
 
@@ -910,15 +931,15 @@ public partial struct Function<TArg0, TArg1, TArg2, TArg3, TResult>
 {
 }
 
-public partial struct Void : IJSValueHolder<Void>
+public partial struct @void : IJSValueHolder<@void>
 {
 }
 
-public partial struct Any : IJSValueHolder<Any>
+public partial struct @any : IJSValueHolder<@any>
 {
 }
 
-public partial struct Unknown : IJSValueHolder<Unknown>
+public partial struct @unknown : IJSValueHolder<@unknown>
 {
 }
 
@@ -1040,7 +1061,4 @@ public partial class GlobalCache
 }
 
 // To avoid conflicts with types in the System namespace
-public partial struct Boolean { }
-public partial struct Object { }
 public partial struct Math { }
-public partial struct String { }
