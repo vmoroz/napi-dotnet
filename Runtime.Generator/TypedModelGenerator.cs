@@ -366,8 +366,29 @@ public class TypedModelGenerator : ISourceGenerator
 
             s.DecreaseIndent();
             s += "}";
-        }
 
+            INamedTypeSymbol attributeSymbol = context.Compilation.GetTypeByMetadataName("NodeApi.TypedModel.GenerateInstanceInGlobalCacheAttribute")
+                ?? throw new Exception("Symbol not found for GenerateInstanceInGlobalCacheAttribute");
+            AttributeData? attributeData = structSymbol.GetAttributes().SingleOrDefault(a => a.AttributeClass?.Equals(attributeSymbol, SymbolEqualityComparer.Default) ?? false);
+            if (attributeData is not null)
+            {
+                TypedConstant globalPropertyNameConst = attributeData.ConstructorArguments.FirstOrDefault();
+                string globalPropertyName = globalPropertyNameConst.Value is object value ? value.ToString() : structName;
+                s++;
+                s += $$"""
+                    public partial struct {{structName}}
+                    {
+                        public static {{structName}} Instance => GlobalCache.{{globalPropertyName}};
+                    }
+
+                    public partial class GlobalCache
+                    {
+                        public static {{structName}} {{globalPropertyName}} => (NumberConstructor)GetValue(CacheId.{{globalPropertyName}});
+                        private partial class CacheId { public static readonly CacheId {{globalPropertyName}} = new CacheId(nameof({{globalPropertyName}})); }
+                    }
+                    """;
+            }
+        }
 
         return (s.ToString(), fileName);
     }

@@ -283,60 +283,13 @@ public partial interface INumberConstructor : ITypedConstructor<NumberConstructo
 
 public partial struct @number : INumber<@number> { }
 public partial struct Number : INumber<Number> { }
-public partial struct NumberConstructor : INumberConstructor
-{
-    //TODO: put in ITypedConstructor type argument and generate
-    public static NumberConstructor Instance => GlobalCache.Number;
-}
+
+[GenerateInstanceInGlobalCache(nameof(Number))]
+public partial struct NumberConstructor : INumberConstructor { }
 
 public partial interface IGlobal
 {
     NumberConstructor Number { get; set; }
-}
-
-public partial class GlobalCache
-{
-    [ThreadStatic] private static GlobalCache? s_instance;
-    private JSValue?[] _entries = new JSValue?[CacheId.Count];
-
-    private static JSValue GetValue(CacheId cacheId)
-    {
-        if (s_instance is null)
-        {
-            s_instance = new GlobalCache();
-        }
-
-        JSValue?[] entries = s_instance._entries;
-        if (entries[cacheId.Index] is JSValue value && !value.Scope.IsDisposed)
-        {
-            return value;
-        }
-
-        value = cacheId.CreateValue();
-        entries[cacheId.Index] = value;
-        return value;
-    }
-
-    private partial class CacheId
-    {
-        public readonly int Index;
-        public readonly Func<JSValue> CreateValue;
-
-        public static int Count { get; private set; }
-
-        private CacheId(string propertyName)
-        {
-            Index = Count++;
-            CreateValue = () => JSValue.Global.GetProperty(propertyName);
-        }
-    }
-}
-
-//TODO: Generate
-public partial class GlobalCache
-{
-    public static NumberConstructor Number => (NumberConstructor)GetValue(CacheId.Number);
-    private partial class CacheId { public static readonly CacheId Number = new CacheId(nameof(Number)); }
 }
 
 //TODO: Add import types and template strings array
@@ -1033,6 +986,56 @@ sealed class TypedConstructorAttribute<T> : Attribute
     public TypedConstructorAttribute()
     {
         ConstructorType = typeof(T);
+    }
+}
+
+[AttributeUsage(AttributeTargets.Struct, Inherited = false)]
+sealed class GenerateInstanceInGlobalCacheAttribute : Attribute
+{
+    public string GlobalPropertyName { get; }
+
+    [SetsRequiredMembers]
+    public GenerateInstanceInGlobalCacheAttribute(string globalPropertyName)
+    {
+        GlobalPropertyName = globalPropertyName;
+    }
+}
+
+public partial class GlobalCache
+{
+    [ThreadStatic] private static GlobalCache? s_instance;
+    private JSValue?[] _entries = new JSValue?[CacheId.Count];
+
+    private static JSValue GetValue(CacheId cacheId)
+    {
+        if (s_instance is null)
+        {
+            s_instance = new GlobalCache();
+        }
+
+        JSValue?[] entries = s_instance._entries;
+        if (entries[cacheId.Index] is JSValue value && !value.Scope.IsDisposed)
+        {
+            return value;
+        }
+
+        value = cacheId.CreateValue();
+        entries[cacheId.Index] = value;
+        return value;
+    }
+
+    private partial class CacheId
+    {
+        public readonly int Index;
+        public readonly Func<JSValue> CreateValue;
+
+        public static int Count { get; private set; }
+
+        private CacheId(string propertyName)
+        {
+            Index = Count++;
+            CreateValue = () => JSValue.Global.GetProperty(propertyName);
+        }
     }
 }
 
