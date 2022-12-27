@@ -423,7 +423,7 @@ public partial interface IDateConstructor
     Date New(Number year, Number monthIndex, Number? date = null, Number? hours = null, Number? minutes = null, Number? seconds = null, Number? ms = null);
     String Call();
     Date prototype { get; }
-    Number parse(string s);
+    Number parse(String s);
     Number UTC(Number year, Number monthIndex, Number? date = null, Number? hours = null, Number? minutes = null, Number? seconds = null, Number? ms = null);
     Number now();
 }

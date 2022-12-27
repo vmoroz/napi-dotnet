@@ -82,8 +82,10 @@ public class AutoNotifyGenerator : ISourceGenerator
             structName += "<" + string.Join(", ", structSymbol.TypeParameters.Select(t => t.Name)) + ">";
             fileName += "_" + string.Join("_", structSymbol.TypeParameters.Select(t => t.Name));
         }
-        if (Char.IsLower(fileName[0]))
-        {
+
+        if (char.IsLower(structName[0]))
+        { 
+            structName = '@' + structName;
             fileName = "_" + fileName;
         }
 
@@ -118,11 +120,15 @@ public class AutoNotifyGenerator : ISourceGenerator
         {
             foreach (var member in interfaceSymbol.GetMembers())
             {
+                if (member.IsStatic)
+                {
+                    continue;
+                }
+
                 if (member is IPropertySymbol propertySymbol)
                 {
-                    if (propertySymbol.IsStatic) { continue; }
                     bool isReadonly = propertySymbol.SetMethod == null;
-                    string typeName = ToDisplayString(propertySymbol.Type);
+                    string propertyType = ToDisplayString(propertySymbol.Type);
                     string propertyName = propertySymbol.Name;
 
                     if (propertySymbol.Parameters.Length == 0)
@@ -131,16 +137,16 @@ public class AutoNotifyGenerator : ISourceGenerator
                         if (isReadonly)
                         {
                             s += $$"""
-                                public {{typeName}} {{propertyName}}
-                                    => ({{typeName}})_value.GetProperty(NameTable.{{propertyName}});
+                                public {{propertyType}} {{propertyName}}
+                                    => ({{propertyType}})_value.GetProperty(NameTable.{{propertyName}});
                                 """;
                         }
                         else
                         {
                             s += $$"""
-                                public {{typeName}} {{propertyName}}
+                                public {{propertyType}} {{propertyName}}
                                 {
-                                    get => ({{typeName}})_value.GetProperty(NameTable.{{propertyName}});
+                                    get => ({{propertyType}})_value.GetProperty(NameTable.{{propertyName}});
                                     set => _value.SetProperty(NameTable.{{propertyName}}, value);
                                 }
                                 """;
@@ -153,16 +159,16 @@ public class AutoNotifyGenerator : ISourceGenerator
                         if (isReadonly)
                         {
                             s += $$"""
-                                public {{typeName}} this[{{parameterType}} {{parameterName}}]
-                                    => ({{typeName}})_value.GetProperty({{parameterName}});
+                                public {{propertyType}} this[{{parameterType}} {{parameterName}}]
+                                    => ({{propertyType}})_value.GetProperty({{parameterName}});
                                 """;
                         }
                         else
                         {
                             s += $$"""
-                                public {{typeName}} this[{{parameterType}} {{parameterName}}]
+                                public {{propertyType}} this[{{parameterType}} {{parameterName}}]
                                 {
-                                    get => ({{typeName}})_value.GetProperty({{parameterName}});
+                                    get => ({{propertyType}})_value.GetProperty({{parameterName}});
                                     set => _value.SetProperty({{parameterName}}, value);
                                 }
                                 """;
@@ -561,7 +567,14 @@ namespace {namespaceName}
 
     private string ToDisplayString(ITypeSymbol typeSymbol)
     {
-        return typeSymbol.ToDisplayString();
+        string typeName = typeSymbol.ToDisplayString();
+        // If type name starts with a lower case letter, then prefix it with '@'
+        int typeNameStart = typeName.LastIndexOf('.') + 1;
+        if (typeNameStart > 0 && char.IsLower(typeName[typeNameStart]))
+        {
+            typeName = typeName.Insert(typeNameStart, "@");
+        }
+        return typeName;
     }
 
     private string ProcessNameTable(HashSet<string> nameTable)
