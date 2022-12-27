@@ -582,7 +582,7 @@ public class StructCodeGenerator
 
             if (member is IPropertySymbol propertySymbol)
             {
-                GenerateProperty(nameTable, s, propertySymbol);
+                GenerateProperty(propertySymbol);
             }
             else if (member is IMethodSymbol methodSymbol)
             {
@@ -655,7 +655,7 @@ public class StructCodeGenerator
         return s;
     }
 
-    private SourceBuilder GenerateProperty(HashSet<string> nameTable, SourceBuilder s, IPropertySymbol propertySymbol)
+    private void GenerateProperty(IPropertySymbol propertySymbol)
     {
         bool isReadonly = propertySymbol.SetMethod == null;
         string propertyType = ToDisplayString(propertySymbol.Type);
@@ -663,7 +663,7 @@ public class StructCodeGenerator
 
         if (propertySymbol.Parameters.Length == 0)
         {
-            nameTable.Add(propertySymbol.Name);
+            _nameTable.Add(propertySymbol.Name);
             if (isReadonly)
             {
                 GenerateReadonlyProperty(propertyType, propertyName);
@@ -675,28 +675,17 @@ public class StructCodeGenerator
         }
         else if (propertySymbol.Parameters.Length == 1)
         {
-            string parameterName = propertySymbol.Parameters[0].Name;
             string parameterType = ToDisplayString(propertySymbol.Parameters[0].Type);
+            string parameterName = propertySymbol.Parameters[0].Name;
             if (isReadonly)
             {
-                s += $$"""
-                                public {{propertyType}} this[{{parameterType}} {{parameterName}}]
-                                    => ({{propertyType}})_value.GetProperty({{parameterName}});
-                                """;
+                GenerateReadonlyIndexer(propertyType, parameterType, parameterName);
             }
             else
             {
-                s += $$"""
-                                public {{propertyType}} this[{{parameterType}} {{parameterName}}]
-                                {
-                                    get => ({{propertyType}})_value.GetProperty({{parameterName}});
-                                    set => _value.SetProperty({{parameterName}}, value);
-                                }
-                                """;
+                GenerateWritableIndexer(propertyType, parameterType, parameterName);
             }
         }
-
-        return s;
     }
 
     private void GenerateReadonlyProperty(string propertyType, string propertyName)
@@ -714,6 +703,25 @@ public class StructCodeGenerator
             {
                 get => ({{propertyType}})_value.GetProperty(NameTable.{{propertyName}});
                 set => _value.SetProperty(NameTable.{{propertyName}}, value);
+            }
+            """;
+    }
+
+    private void GenerateReadonlyIndexer(string propertyType, string parameterType, string parameterName)
+    {
+        _source += $$"""
+            public {{propertyType}} this[{{parameterType}} {{parameterName}}]
+                => ({{propertyType}})_value.GetProperty({{parameterName}});
+            """;
+    }
+
+    private void GenerateWritableIndexer(string propertyType, string parameterType, string parameterName)
+    {
+        _source += $$"""
+            public {{propertyType}} this[{{parameterType}} {{parameterName}}]
+            {
+                get => ({{propertyType}})_value.GetProperty({{parameterName}});
+                set => _value.SetProperty({{parameterName}}, value);
             }
             """;
     }
