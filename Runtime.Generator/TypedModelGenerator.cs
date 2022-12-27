@@ -29,7 +29,7 @@ public class AutoNotifyGenerator : ISourceGenerator
             return;
         }
 
-        INamedTypeSymbol interfaceAttributeSymbol = context.Compilation.GetTypeByMetadataName("NodeApi.EcmaScript.TypedInterfaceAttribute")
+        INamedTypeSymbol interfaceAttributeSymbol = context.Compilation.GetTypeByMetadataName("NodeApi.TypedModel.TypedInterfaceAttribute")
             ?? throw new Exception("Symbol not found for TypedInterfaceAttribute");
 
         HashSet<string> nameTable = new HashSet<string>();
@@ -571,7 +571,7 @@ namespace {namespaceName}
 
         // begin building the generated source
         StringBuilder source = new StringBuilder(@"
-namespace NodeApi.EcmaScript
+namespace NodeApi.TypedModel
 {
     public partial class NameTable
     {");
@@ -605,7 +605,7 @@ namespace NodeApi.EcmaScript
                 INamedTypeSymbol interfaceSymbol = context.SemanticModel.GetDeclaredSymbol(interfaceDeclarationSyntax)
                     ?? throw new Exception($"Semantic node not found for {interfaceDeclarationSyntax}");
 
-                if (interfaceSymbol.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "NodeApi.EcmaScript.TypedInterfaceAttribute"))
+                if (interfaceSymbol.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "NodeApi.TypedModel.TypedInterfaceAttribute"))
                 {
                     TypedInterfaces.Add(interfaceSymbol);
                 }

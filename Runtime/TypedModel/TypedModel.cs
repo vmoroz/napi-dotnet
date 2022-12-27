@@ -2,7 +2,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
-namespace NodeApi.EcmaScript;
+namespace NodeApi.TypedModel;
 
 // ECMAScript APIs as they defined in
 // https://github.com/microsoft/TypeScript/blob/main/src/lib/es5.d.ts
@@ -292,15 +292,13 @@ public partial interface IGlobal
     NumberConstructor Number { get; set; }
 }
 
-public partial interface IGlobalCache
-{
-    static abstract NumberConstructor Number { get; }
-}
-
-public partial class GlobalCache : IGlobalCache
+public static partial class GlobalCache
 {
     //TODO: implement generated
+    //public static BooleanConstructor Boolean { get { return new NumberConstructor(); } }
+    //public static StringConstructor String { get { return new NumberConstructor(); } }
     public static NumberConstructor Number { get { return new NumberConstructor(); } }
+    //public static DateConstructor Date { get { return new NumberConstructor(); } }
 }
 
 //TODO: Add import types and template strings array
