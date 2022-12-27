@@ -346,6 +346,8 @@ public partial interface IMath
     @number tan(@number x);
 }
 
+public partial struct Math { }
+
 public partial interface IGlobal
 {
     Math Math { get; set; }
@@ -873,12 +875,6 @@ public partial interface IGlobal
     Float64ArrayConstructor Float64Array { get; set; }
 }
 
-public partial class NameTable
-{
-    // TODO: Implement
-    public static JSValue GetStringName(string value) => JSValue.Null;
-}
-
 public partial struct OneOf<T1, T2> : IJSValueHolder<OneOf<T1, T2>>
 {
 }
@@ -985,80 +981,3 @@ public interface IFunction<TSelf> : IJSValueHolder<TSelf>
 public partial struct Nullable<T> : IJSValueHolder<Nullable<T>>
 {
 }
-
-[AttributeUsage(AttributeTargets.Interface, Inherited = false, AllowMultiple = true)]
-sealed class TypedInterfaceAttribute : Attribute
-{
-    public string? Name { get; init; }
-
-    [SetsRequiredMembers]
-    public TypedInterfaceAttribute(string? name = null)
-    {
-        Name = name;
-    }
-}
-
-[AttributeUsage(AttributeTargets.Struct, Inherited = false)]
-sealed class TypedConstructorAttribute<T> : Attribute
-{
-    public Type ConstructorType { get; init; }
-
-    [SetsRequiredMembers]
-    public TypedConstructorAttribute()
-    {
-        ConstructorType = typeof(T);
-    }
-}
-
-[AttributeUsage(AttributeTargets.Struct, Inherited = false)]
-sealed class GenerateInstanceInGlobalCacheAttribute : Attribute
-{
-    public string GlobalPropertyName { get; }
-
-    [SetsRequiredMembers]
-    public GenerateInstanceInGlobalCacheAttribute(string globalPropertyName)
-    {
-        GlobalPropertyName = globalPropertyName;
-    }
-}
-
-public partial class GlobalCache
-{
-    [ThreadStatic] private static GlobalCache? s_instance;
-    private JSValue?[] _entries = new JSValue?[CacheId.Count];
-
-    private static JSValue GetValue(CacheId cacheId)
-    {
-        if (s_instance is null)
-        {
-            s_instance = new GlobalCache();
-        }
-
-        JSValue?[] entries = s_instance._entries;
-        if (entries[cacheId.Index] is JSValue value && !value.Scope.IsDisposed)
-        {
-            return value;
-        }
-
-        value = cacheId.CreateValue();
-        entries[cacheId.Index] = value;
-        return value;
-    }
-
-    private partial class CacheId
-    {
-        public readonly int Index;
-        public readonly Func<JSValue> CreateValue;
-
-        public static int Count { get; private set; }
-
-        private CacheId(string propertyName)
-        {
-            Index = Count++;
-            CreateValue = () => JSValue.Global.GetProperty(propertyName);
-        }
-    }
-}
-
-// To avoid conflicts with types in the System namespace
-public partial struct Math { }
