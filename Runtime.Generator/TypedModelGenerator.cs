@@ -415,7 +415,7 @@ public class StructCodeGenerator
 
         foreach (var interfaceSymbol in _structSymbol.AllInterfaces)
         {
-            GenerateInterfaceMembers(_nameTable, s, interfaceSymbol);
+            GenerateInterfaceMembers(interfaceSymbol);
         }
 
         s.DecreaseIndent();
@@ -571,9 +571,9 @@ public class StructCodeGenerator
         return s.ToString();
     }
 
-    private void GenerateInterfaceMembers(HashSet<string> nameTable, SourceBuilder s, INamedTypeSymbol interfaceSymbol)
+    private void GenerateInterfaceMembers(INamedTypeSymbol interfaceSymbol)
     {
-        foreach (var member in interfaceSymbol.GetMembers())
+        foreach (ISymbol member in interfaceSymbol.GetMembers())
         {
             if (member.IsStatic)
             {
@@ -584,22 +584,19 @@ public class StructCodeGenerator
             {
                 GenerateProperty(propertySymbol);
             }
-            else if (member is IMethodSymbol methodSymbol)
+            else if (member is IMethodSymbol methodSymbol && methodSymbol.MethodKind == MethodKind.Ordinary)
             {
-                if (methodSymbol.MethodKind != MethodKind.Ordinary)
-                {
-                    continue;
-                }
-
-                GenerateMethod(nameTable, s, methodSymbol);
+                GenerateMethod(methodSymbol);
             }
+
+            _source++;
         }
     }
 
-    private SourceBuilder GenerateMethod(HashSet<string> nameTable, SourceBuilder s, IMethodSymbol methodSymbol)
+    private void GenerateMethod(IMethodSymbol methodSymbol)
     {
         string methodName = methodSymbol.Name;
-        nameTable.Add(methodName);
+        _nameTable.Add(methodName);
 
         string genericArgs = "";
         string typeContraints = "";
@@ -624,35 +621,46 @@ public class StructCodeGenerator
             + " "
             + p.Name
             + (p.HasExplicitDefaultValue ? " = " + (p.ExplicitDefaultValue is object o ? o.ToString() : "null") : "")));
-        string returnTypeName = ToDisplayString(methodSymbol.ReturnType);
+        string returnType = ToDisplayString(methodSymbol.ReturnType);
+        string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
         if (methodName == "New")
         {
-            string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
-            s += $$"""
-                            public {{returnTypeName}} New{{genericArgs}}({{parameters}}){{typeContraints}}
-                                => ({{returnTypeName}})_value.CallAsConstructor({{args}});
-                            """;
+            GenerateNewMethod(returnType, genericArgs, parameters, typeContraints, args);
         }
         else if (methodName == "Call")
         {
-            string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
-            args = args.Length > 0 ? ", " + args : "";
-            s += $$"""
-                            public {{returnTypeName}} Call{{genericArgs}}({{parameters}}){{typeContraints}}
-                                => ({{returnTypeName}})_value.Call(JSValue.Undefined{{args}});
-                            """;
+            GenerateInvokeMethod(returnType, genericArgs, parameters, typeContraints, args);
         }
         else
         {
-            string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
-            args = args.Length > 0 ? ", " + args : "";
-            s += $$"""
-                            public {{returnTypeName}} {{methodName}}{{genericArgs}}({{parameters}}){{typeContraints}}
-                                => ({{returnTypeName}})_value.CallMethod(NameTable.{{methodName}}{{args}});
-                            """;
+            GenerateCallMethod(returnType, methodName, genericArgs, parameters, typeContraints, args);
         }
-        s++;
-        return s;
+    }
+
+    private void GenerateNewMethod(string returnType, string genericArgs, string parameters, string typeContraints, string args)
+    {
+        _source += $$"""
+            public {{returnType}} New{{genericArgs}}({{parameters}}){{typeContraints}}
+                => ({{returnType}})_value.CallAsConstructor({{args}});
+            """;
+    }
+
+    private void GenerateInvokeMethod(string returnType, string genericArgs, string parameters, string typeContraints, string args)
+    {
+        args = args.Length > 0 ? ", " + args : "";
+        _source += $$"""
+            public {{returnType}} Call{{genericArgs}}({{parameters}}){{typeContraints}}
+                => ({{returnType}})_value.Call(JSValue.Undefined{{args}});
+            """;
+    }
+
+    private void GenerateCallMethod(string returnType, string methodName, string genericArgs, string parameters, string typeContraints, string args)
+    {
+        args = args.Length > 0 ? ", " + args : "";
+        _source += $$"""
+            public {{returnType}} {{methodName}}{{genericArgs}}({{parameters}}){{typeContraints}}
+                => ({{returnType}})_value.CallMethod(NameTable.{{methodName}}{{args}});
+            """;
     }
 
     private void GenerateProperty(IPropertySymbol propertySymbol)
