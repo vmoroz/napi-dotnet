@@ -327,8 +327,8 @@ public class AutoNotifyGenerator : ISourceGenerator
                         {
                             string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
                             s += $$"""
-                                public static {{returnTypeName}} New{{genericArgs}}({{parameters}}){{typeContraints}}
-                                    => ({{returnTypeName}})((JSValue){{structName}}.Instance).CallAsConstructor({{args}});
+                                public {{targetName}}{{genericArgs}}({{parameters}}){{typeContraints}}
+                                    => _value = ((JSValue){{structName}}.Instance).CallAsConstructor({{args}});
                                 """;
                         }
                         else if (methodName == "Call")
