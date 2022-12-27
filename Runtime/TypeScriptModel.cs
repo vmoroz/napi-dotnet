@@ -261,27 +261,26 @@ public partial interface IGlobal
 public partial interface INumber<TSelf> : IJSValueHolder<TSelf>
     where TSelf : struct, INumber<TSelf>
 {
-    String toString(Number? radix = null);
-    String toFixed(Number? fractionDigits = null);
-    String toExponential(Number? fractionDigits = null);
-    String toPrecision(Number? precision = null);
-    Number valueOf();
+    String toString(@number? radix = null);
+    String toFixed(@number? fractionDigits = null);
+    String toExponential(@number? fractionDigits = null);
+    String toPrecision(@number? precision = null);
+    @number valueOf();
 }
 
 public partial interface INumberConstructor : ITypedConstructor<NumberConstructor, Number>
 {
     Number New(Any? value = null);
-    Number Call(Any? value = null);
+    @number Call(Any? value = null);
     Number prototype { get; }
-    Number MAX_VALUE { get; }
-    Number MIN_VALUE { get; }
-    Number NaN { get; }
-    Number NEGATIVE_INFINITY { get; }
-    Number POSITIVE_INFINITY { get; }
+    @number MAX_VALUE { get; }
+    @number MIN_VALUE { get; }
+    @number NaN { get; }
+    @number NEGATIVE_INFINITY { get; }
+    @number POSITIVE_INFINITY { get; }
 }
 
-//TODO: implement different types for primitives and objects for primitives
-//public partial struct @number : INumber<@number> { }
+public partial struct @number : INumber<@number> { }
 public partial struct Number : INumber<Number> { }
 public partial struct NumberConstructor : INumberConstructor
 {

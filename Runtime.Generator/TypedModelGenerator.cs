@@ -82,6 +82,10 @@ public class AutoNotifyGenerator : ISourceGenerator
             structName += "<" + string.Join(", ", structSymbol.TypeParameters.Select(t => t.Name)) + ">";
             fileName += "_" + string.Join("_", structSymbol.TypeParameters.Select(t => t.Name));
         }
+        if (Char.IsLower(fileName[0]))
+        {
+            fileName = "_" + fileName;
+        }
 
         if (uniqueFileNames.Contains(fileName))
         {
