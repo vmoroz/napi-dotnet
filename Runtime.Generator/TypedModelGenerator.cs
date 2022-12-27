@@ -544,31 +544,37 @@ public class StructCodeGenerator
             s.DecreaseIndent();
             s += "}";
 
-            INamedTypeSymbol attributeSymbol = _context.Compilation.GetTypeByMetadataName("NodeApi.TypedModel.GenerateInstanceInGlobalCacheAttribute")
-                ?? throw new Exception("Symbol not found for GenerateInstanceInGlobalCacheAttribute");
-            AttributeData? attributeData = _structSymbol.GetAttributes().SingleOrDefault(a => a.AttributeClass?.Equals(attributeSymbol, SymbolEqualityComparer.Default) ?? false);
-            if (attributeData is not null)
-            {
-                TypedConstant globalPropertyNameConst = attributeData.ConstructorArguments.FirstOrDefault();
-                string globalPropertyName = globalPropertyNameConst.Value is object value ? value.ToString() : structName;
-                s++;
-                s += $$"""
-                    public partial struct {{structName}}
-                    {
-                        public static {{structName}} Instance => GlobalCache.{{globalPropertyName}};
-                    }
-
-                    public partial class GlobalCache
-                    {
-                        public static {{structName}} {{globalPropertyName}} => ({{structName}})GetValue(CacheId.{{globalPropertyName}});
-                        private partial class CacheId { public static readonly CacheId {{globalPropertyName}} = new CacheId(nameof({{globalPropertyName}})); }
-                    }
-                    """;
-            }
+            GenerateInstanceInGlobalCache(structName);
         }
 
         FileName = fileName;
         return s.ToString();
+    }
+
+    private void GenerateInstanceInGlobalCache(string structName)
+    {
+        INamedTypeSymbol attributeSymbol = _context.Compilation.GetTypeByMetadataName("NodeApi.TypedModel.GenerateInstanceInGlobalCacheAttribute")
+            ?? throw new Exception("Symbol not found for GenerateInstanceInGlobalCacheAttribute");
+        AttributeData? attributeData = _structSymbol.GetAttributes().SingleOrDefault(a => a.AttributeClass?.Equals(attributeSymbol, SymbolEqualityComparer.Default) ?? false);
+        if (attributeData is not null)
+        {
+            TypedConstant globalPropertyNameConst = attributeData.ConstructorArguments.FirstOrDefault();
+            string globalPropertyName = globalPropertyNameConst.Value is object value ? value.ToString() : structName;
+
+            _source += $$"""
+
+                public partial struct {{structName}}
+                {
+                    public static {{structName}} Instance => GlobalCache.{{globalPropertyName}};
+                }
+
+                public partial class GlobalCache
+                {
+                    public static {{structName}} {{globalPropertyName}} => ({{structName}})GetValue(CacheId.{{globalPropertyName}});
+                    private partial class CacheId { public static readonly CacheId {{globalPropertyName}} = new CacheId(nameof({{globalPropertyName}})); }
+                }
+                """;
+        }
     }
 
     private void GenerateInterfaceMembers(INamedTypeSymbol interfaceSymbol)
