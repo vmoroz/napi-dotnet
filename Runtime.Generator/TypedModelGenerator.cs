@@ -13,7 +13,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 namespace NodeApi.Runtime.Generator;
 
 [Generator]
-public class AutoNotifyGenerator : ISourceGenerator
+public class TypedModelGenerator : ISourceGenerator
 {
     public void Initialize(GeneratorInitializationContext context)
     {
