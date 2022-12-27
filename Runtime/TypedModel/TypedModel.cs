@@ -285,6 +285,7 @@ public partial struct @number : INumber<@number> { }
 public partial struct Number : INumber<Number> { }
 public partial struct NumberConstructor : INumberConstructor
 {
+    //TODO: put in ITypedConstructor type argument and generate
     public static NumberConstructor Instance => GlobalCache.Number;
 }
 
@@ -295,37 +296,42 @@ public partial interface IGlobal
 
 public partial class GlobalCache
 {
-    private JSValue?[] _items = new JSValue?[CacheId.Count];
+    [ThreadStatic] private static GlobalCache? s_instance;
+    private JSValue?[] _entries = new JSValue?[CacheId.Count];
 
     private static JSValue Get(CacheId cacheId)
     {
-        if (JSValueScope.Data is JSValueScopeData data)
+        if (s_instance is null)
         {
-            JSValue?[] items = data.GlobalCache._items;
-            if (items[cacheId.Index] is JSValue value && !value.Scope.IsDisposed)
-            {
-                return value;
-            }
+            s_instance = new GlobalCache();
+        }
 
-            value = cacheId.Creator();
-            items[cacheId.Index] = value;
+        JSValue?[] entries = s_instance._entries;
+        if (entries[cacheId.Index] is JSValue value && !value.Scope.IsDisposed)
+        {
             return value;
         }
-        throw new Exception("Cannot get JSValueScopeData");
+
+        value = cacheId.CreateValue();
+        entries[cacheId.Index] = value;
+        return value;
     }
 
-    public static NumberConstructor Number => (NumberConstructor)Get(CacheId.Number);
-    //public static StringConstructor String => Get(CacheId.String);
-
-    public class CacheId
+    private partial class CacheId
     {
         public required int Index { get; init; }
-        public required Func<JSValue> Creator { get; init; }
+        public required Func<JSValue> CreateValue { get; init; }
 
         public static int Count { get; private set; }
-        public static CacheId Number { get; } = new CacheId { Index = Count++, Creator = () => JSValue.Global.GetProperty(NameTable.Number) };
-        public static CacheId String { get; } = new CacheId { Index = Count++, Creator = () => JSValue.Global.GetProperty(NameTable.String) };
+
+        //TODO: Generate
+        public static CacheId Number { get; } = new CacheId { Index = Count++, CreateValue = () => JSValue.Global.GetProperty(NameTable.Number) };
+        public static CacheId String { get; } = new CacheId { Index = Count++, CreateValue = () => JSValue.Global.GetProperty(NameTable.String) };
     }
+
+    //TODO: Generate
+    public static NumberConstructor Number => (NumberConstructor)Get(CacheId.Number);
+    //public static StringConstructor String => Get(CacheId.String);
 }
 
 //TODO: Add import types and template strings array

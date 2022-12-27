@@ -6,7 +6,6 @@ namespace NodeApi;
 public class JSValueScope : IDisposable
 {
     private napi_env _env;
-    private JSValueScopeData _data;
     [ThreadStatic] private static JSValueScope? s_current;
 
     public JSValueScope? ParentScope { get; }
@@ -14,13 +13,11 @@ public class JSValueScope : IDisposable
     public JSValueScope(napi_env env)
     {
         _env = env;
-        _data = s_current != null ? s_current._data : new JSValueScopeData();
         ParentScope = s_current;
         s_current = this;
     }
 
     public static JSValueScope? Current => s_current;
-    public static JSValueScopeData? Data => s_current?._data;
 
     public void Close() => Dispose();
 
@@ -50,8 +47,4 @@ public class JSValueScope : IDisposable
             s_current = ParentScope;
         }
     }
-}
-
-public partial class JSValueScopeData
-{
 }
