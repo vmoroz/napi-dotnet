@@ -1,11 +1,43 @@
-using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-
 namespace NodeApi.TypedModel;
 
 // ECMAScript APIs as they defined in
 // https://github.com/microsoft/TypeScript/blob/main/src/lib/es5.d.ts
+
+// In Typed Model we define a type system for Node-API that mimics the TypeScript type system.
+//
+// The C# type system may look similar to TypeScript. It allows to defined interfaces and other types.
+// But it also has a number of significant differences which cannot be mapped directly.
+// For example, a C# interface is an abstract type definition that must be implemented by a class or a struct.
+// In TypeScript an interface is a "typed view" to access already existing object properties.
+// Thus, to implement TypeScript-like type system we must define a set of idioms that can express it using C#.
+// We also want it to be efficient and do not take extra runtime resources. For that we prefer use of structs vs classes.
+//
+// Interfaces.
+//
+// TypeScript interface is a typed view to a JavaScript object's properties and methods.
+// In Node-API Typed Model we represent an interface as a struct that wraps JSValue and provides properties
+// and methods to call the JSValue members.
+//
+// public partial interface IMyInterfaceSpec<TSelf>
+// {
+//     @string name { get; }     // readonly property
+//     @number age { get; set; } // writable property
+//     @number doAction();       // a method
+// }
+//
+// [TypedInterface]
+// public partial struct MyInterface : IMyInterfaceSpec<MyInterface> { }
+//
+// In this definition we have a typed interface type MyInterface.
+// The MyInterface has the TypedInterface attribute and inherits from the IMyInterfaceSpec.
+// Both the struct and the spec interface are partial because code generator will generate
+// missing definitions:
+//  - the interface will be inherited from IJSValueHolder<TSelf> and TSelf will have type constraint:
+//     `where TSelf: struct, IMyInterfaceSpec<TSelf>`
+//  - the struct will implement all static abstract members from IJSValueHolder and the members defined in IMyInterfaceSpec.
+//
+// Generator will skip generation of any members or definitions which are already defined in the code.
+// 
 
 //TODO: type aliases
 //TODO: interfaces
