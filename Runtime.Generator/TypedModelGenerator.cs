@@ -247,7 +247,7 @@ public class StructCodeGenerator
             _s += $"public partial class GlobalCache";
             _s += "{";
             _s += $"public static {structName} {globalPropertyName} => ({structName})GetValue(CacheId.{globalPropertyName});";
-            _s += $"private partial class CacheId {{ public static readonly CacheId {globalPropertyName} = new CacheId(nameof({globalPropertyName})); }}";
+            _s += $"private partial class CacheId {{ public static readonly CacheId {globalPropertyName} = new (nameof({globalPropertyName})); }}";
             _s += "}";
         }
     }
@@ -583,7 +583,14 @@ public class NameTableCodeGenerator
 
         foreach (string name in sortedNames)
         {
-            _s += $"public static JSValue {name} => GetStringName(nameof({name}));";
+            _s += $"public static JSValue {name} => GetString(CacheId.{name});";
+        }
+
+        _s++;
+
+        foreach (string name in sortedNames)
+        {
+            _s += $"private partial class CacheId {{ public static readonly CacheId {name} = new (nameof({name})); }}";
         }
 
         _s += "}";

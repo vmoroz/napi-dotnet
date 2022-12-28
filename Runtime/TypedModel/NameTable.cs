@@ -8,7 +8,7 @@ public partial class NameTable
     [ThreadStatic] private static NameTable? s_instance;
     private JSValue?[] _entries = new JSValue?[CacheId.Count];
 
-    private static JSValue GetStringName(CacheId cacheId)
+    private static JSValue GetString(CacheId cacheId)
     {
         if (s_instance is null)
         {
@@ -35,20 +35,10 @@ public partial class NameTable
 
         public static int Count { get; private set; }
 
-        private CacheId(string propertyName)
+        private CacheId(string name)
         {
             Index = Count++;
-            Name = propertyName;
+            Name = name;
         }
     }
-}
-
-public partial class NameTable
-{ 
-    private partial class CacheId
-    {
-        public static readonly CacheId abs = new CacheId(nameof(abs));
-    }
-
-    public static JSValue abs => GetStringName(CacheId.abs);
 }
