@@ -20,7 +20,7 @@ public partial class GlobalCache
             return value;
         }
 
-        value = cacheId.CreateValue();
+        value = JSValue.Global.GetProperty(cacheId.PropertyName);
         entries[cacheId.Index] = value;
         return value;
     }
@@ -28,14 +28,14 @@ public partial class GlobalCache
     private partial class CacheId
     {
         public readonly int Index;
-        public readonly Func<JSValue> CreateValue;
+        public readonly string PropertyName;
 
         public static int Count { get; private set; }
 
         private CacheId(string propertyName)
         {
             Index = Count++;
-            CreateValue = () => JSValue.Global.GetProperty(propertyName);
+            PropertyName = propertyName;
         }
     }
 }
