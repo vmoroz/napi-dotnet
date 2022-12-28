@@ -7,9 +7,8 @@ namespace NodeApi.Generator;
 internal class SourceBuilder : SourceText
 {
     private readonly StringBuilder _text;
-    private string _currentIndent = string.Empty;
 
-    public SourceBuilder(string indent = "\t", bool autoIndent = true)
+    public SourceBuilder(string indent = "\t")
     {
         _text = new StringBuilder();
         Indent = indent;
@@ -31,62 +30,70 @@ internal class SourceBuilder : SourceText
 
     public string Indent { get; }
 
-    public bool AutoIndent { get; }
+    public int CurrentIndent { get; private set; } = 0;
 
-    public void IncreaseIndent()
+    public SourceBuilder IncreaseIndent()
     {
-        _currentIndent += Indent;
+        CurrentIndent++;
+        return this;
     }
 
-    public void DecreaseIndent()
+    public SourceBuilder DecreaseIndent()
     {
-        if (_currentIndent.Length == 0)
+        if (CurrentIndent == 0)
         {
             throw new InvalidOperationException("Imbalanced unindent.");
         }
 
-        _currentIndent = _currentIndent.Substring(0, _currentIndent.Length - Indent.Length);
+        CurrentIndent--;
+        return this;
     }
 
-    private void AppendLine(string line)
+    public SourceBuilder Append(string text)
     {
-        if (string.IsNullOrEmpty(line))
+        _text.Append(text);
+        return this;
+    }
+
+    public SourceBuilder AppendLine(string line)
+    {
+        if (line.StartsWith("}"))
         {
-            _text.AppendLine("");
-            return;
+            DecreaseIndent();
         }
 
-        string[] lines = line.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-        foreach (string text in lines)
+        if (line.Length > 0)
         {
-            if (line.StartsWith("}") && AutoIndent)
-            {
-                DecreaseIndent();
-            }
-
-            if (text.Length > 0)
-            {
-                _text.Append(_currentIndent);
-            }
-
-            _text.AppendLine(text);
-
-            if (line.EndsWith("{") && AutoIndent)
-            {
-                IncreaseIndent();
-            }
+            AppendIndent();
         }
+
+        _text.AppendLine(line);
+
+        if (line.EndsWith("{"))
+        {
+            IncreaseIndent();
+        }
+
+        return this;
+    }
+
+    public SourceBuilder AppendIndent()
+    {
+        for (int i = 0; i < CurrentIndent; ++i)
+        {
+            _text.Append(Indent);
+        }
+
+        return this;
     }
 
     public static SourceBuilder operator +(SourceBuilder s, string line)
     {
-        s.AppendLine(line);
-        return s;
+        return s.AppendLine(line);
     }
 
     public static SourceBuilder operator ++(SourceBuilder s)
     {
-        s.AppendLine(string.Empty);
-        return s;
+        return s.AppendLine(string.Empty);
     }
 }

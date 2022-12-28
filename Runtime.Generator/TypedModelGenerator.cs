@@ -354,7 +354,7 @@ public class StructCodeGenerator
     private INamedTypeSymbol _structSymbol;
     private HashSet<string> _nameTable;
     private GeneratorExecutionContext _context;
-    private SourceBuilder _source;
+    private SourceBuilder _s;
 
     public string FileName { get; private set; } = "";
 
@@ -366,7 +366,7 @@ public class StructCodeGenerator
         _structSymbol = structSymbol;
         _nameTable = nameTable;
         _context = context;
-        _source = new SourceBuilder(indent: "  ", autoIndent: false);
+        _s = new SourceBuilder(indent: "    ");
     }
 
     public string Execute()
@@ -391,35 +391,25 @@ public class StructCodeGenerator
             fileName = "_" + fileName;
         }
 
-        var s = _source;
+        _s += $"namespace {namespaceName};";
+        _s++;
+        _s += $"public partial struct {structName}";
+        _s += "{";
+        _s += "private JSValue _value;";
+        _s++;
+        _s += $"public static explicit operator {structName}(JSValue value) => new {structName} {{ _value = value }};";
+        _s += $"public static implicit operator JSValue({structName} value) => value._value;";
+        _s++;
+        _s += $"public static explicit operator {structName}?(JSValue value) => value.TypeOf() != JSValueType.Undefined ? ({structName})value : null;";
+        _s += $"public static implicit operator JSValue({structName}? value) => value is {structName} notNullValue ? notNullValue._value : JSValue.Undefined;";
+        _s++;
 
-        s += $$"""
-            namespace {{namespaceName}};
-
-            public partial struct {{structName}}
-            {
-                private JSValue _value;
-
-                public static explicit operator {{structName}}(JSValue value) => new {{structName}} { _value = value };
-                public static implicit operator JSValue({{structName}} value) => value._value;
-
-                // Map Undefined to Nullable
-                public static explicit operator {{structName}}?(JSValue value)
-                    => value.TypeOf() != JSValueType.Undefined ? ({{structName}})value : null;
-
-                public static implicit operator JSValue({{structName}}? value)
-                    => value is {{structName}} notNullValue ? notNullValue._value : JSValue.Undefined;
-
-            """;
-        s.IncreaseIndent();
-
-        foreach (var interfaceSymbol in _structSymbol.AllInterfaces)
+        foreach (INamedTypeSymbol interfaceSymbol in _structSymbol.AllInterfaces)
         {
             GenerateInterfaceMembers(interfaceSymbol);
         }
 
-        s.DecreaseIndent();
-        s += "}";
+        _s += "}";
 
         var constructorInterface = _structSymbol.AllInterfaces.SingleOrDefault(i => i.Name == NameTable.ITypedConstructor.Text);
         if (constructorInterface != null)
@@ -427,159 +417,22 @@ public class StructCodeGenerator
             ITypeSymbol targetType = constructorInterface.TypeArguments[1];
             string targetName = targetType.Name;
 
-            s += $$"""
-
-                public partial struct {{targetName}}
-                {
-                """;
-            s.IncreaseIndent();
+            _s++;
+            _s += $"public partial struct {targetName}";
+            _s += "{";
 
             foreach (var interfaceSymbol in _structSymbol.AllInterfaces)
             {
                 GenerateStaticInterfaceMembers(structName, targetName, interfaceSymbol);
             }
 
-            s.DecreaseIndent();
-            s += "}";
+            _s += "}";
 
             GenerateInstanceInGlobalCache(structName);
         }
 
         FileName = fileName;
-        return s.ToString();
-    }
-
-    private void GenerateStaticInterfaceMembers(string structName, string targetName, INamedTypeSymbol interfaceSymbol)
-    {
-        foreach (var member in interfaceSymbol.GetMembers())
-        {
-            if (member is IPropertySymbol propertySymbol)
-            {
-                if (propertySymbol.IsStatic)
-                {
-                    continue;
-                }
-
-                bool isReadonly = propertySymbol.SetMethod == null;
-                string typeName = ToDisplayString(propertySymbol.Type);
-                string propertyName = propertySymbol.Name;
-
-                if (propertySymbol.Parameters.Length == 0)
-                {
-                    _nameTable.Add(propertySymbol.Name);
-
-                    if (isReadonly)
-                    {
-                        _source += $$"""
-                                    public static {{typeName}} {{propertyName}}
-                                        => ({{typeName}})((JSValue){{structName}}.Instance).GetProperty(NameTable.{{propertyName}});
-                                    """;
-                    }
-                    else
-                    {
-                        _source += $$"""
-                                    public static {{typeName}} {{propertyName}}
-                                    {
-                                        get => ({{typeName}})((JSValue){{structName}}.Instance).GetProperty(NameTable.{{propertyName}});
-                                        set => ((JSValue){{structName}}.Instance).SetProperty(NameTable.{{propertyName}}, value);
-                                    }
-                                    """;
-                    }
-                }
-                else if (propertySymbol.Parameters.Length == 1)
-                {
-                    continue;
-                }
-                _source++;
-            }
-            else if (member is IMethodSymbol methodSymbol)
-            {
-                if (methodSymbol.MethodKind != MethodKind.Ordinary)
-                {
-                    continue;
-                }
-
-                string methodName = methodSymbol.Name;
-                _nameTable.Add(methodName);
-
-                string genericArgs = "";
-                string typeContraints = "";
-                if (methodSymbol.IsGenericMethod)
-                {
-                    genericArgs = "<" + string.Join(", ", methodSymbol.TypeParameters.Select(p => ToDisplayString(p))) + ">";
-
-                    foreach (ITypeParameterSymbol p in methodSymbol.TypeParameters)
-                    {
-                        if (p.HasValueTypeConstraint)
-                        {
-                            string constraintTypes = string.Join(", ", p.ConstraintTypes.Select(c => ToDisplayString(c)));
-                            typeContraints += $$"""
-                                            where {{ToDisplayString(p)}} : struct, {{constraintTypes}}
-                                        """;
-                        }
-                    }
-                }
-
-                string parameters = string.Join(", ", methodSymbol.Parameters.Select(p => ToDisplayString(p.Type)
-                    + " "
-                    + p.Name
-                    + (p.HasExplicitDefaultValue ? " = " + (p.ExplicitDefaultValue is object o ? o.ToString() : "null") : "")));
-                string returnTypeName = ToDisplayString(methodSymbol.ReturnType);
-                if (methodName == "New")
-                {
-                    string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
-                    _source += $$"""
-                                public {{targetName}}{{genericArgs}}({{parameters}}){{typeContraints}}
-                                    => _value = ((JSValue){{structName}}.Instance).CallAsConstructor({{args}});
-                                """;
-                }
-                else if (methodName == "Call")
-                {
-                    string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
-                    args = args.Length > 0 ? ", " + args : "";
-                    _source += $$"""
-                                public static {{returnTypeName}} Call{{genericArgs}}({{parameters}}){{typeContraints}}
-                                    => ({{returnTypeName}})((JSValue){{structName}}.Instance).Call(JSValue.Undefined{{args}});
-                                """;
-                }
-                else
-                {
-                    string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
-                    args = args.Length > 0 ? ", " + args : "";
-                    _source += $$"""
-                                public static {{returnTypeName}} {{methodName}}{{genericArgs}}({{parameters}}){{typeContraints}}
-                                    => ({{returnTypeName}})((JSValue){{structName}}.Instance).CallMethod(NameTable.{{methodName}}{{args}});
-                                """;
-                }
-                _source++;
-            }
-        }
-    }
-
-    private void GenerateInstanceInGlobalCache(string structName)
-    {
-        INamedTypeSymbol attributeSymbol = _context.Compilation.GetTypeByMetadataName("NodeApi.TypedModel.GenerateInstanceInGlobalCacheAttribute")
-            ?? throw new Exception("Symbol not found for GenerateInstanceInGlobalCacheAttribute");
-        AttributeData? attributeData = _structSymbol.GetAttributes().SingleOrDefault(a => a.AttributeClass?.Equals(attributeSymbol, SymbolEqualityComparer.Default) ?? false);
-        if (attributeData is not null)
-        {
-            TypedConstant globalPropertyNameConst = attributeData.ConstructorArguments.FirstOrDefault();
-            string globalPropertyName = globalPropertyNameConst.Value is object value ? value.ToString() : structName;
-
-            _source += $$"""
-
-                public partial struct {{structName}}
-                {
-                    public static {{structName}} Instance => GlobalCache.{{globalPropertyName}};
-                }
-
-                public partial class GlobalCache
-                {
-                    public static {{structName}} {{globalPropertyName}} => ({{structName}})GetValue(CacheId.{{globalPropertyName}});
-                    private partial class CacheId { public static readonly CacheId {{globalPropertyName}} = new CacheId(nameof({{globalPropertyName}})); }
-                }
-                """;
-        }
+        return _s.ToString();
     }
 
     private void GenerateInterfaceMembers(INamedTypeSymbol interfaceSymbol)
@@ -595,102 +448,82 @@ public class StructCodeGenerator
             {
                 GenerateProperty(propertySymbol);
             }
-            else if (member is IMethodSymbol methodSymbol && methodSymbol.MethodKind == MethodKind.Ordinary)
+            else if (member is IMethodSymbol methodSymbol)
             {
                 GenerateMethod(methodSymbol);
             }
-
-            _source++;
         }
     }
 
-    private void GenerateMethod(IMethodSymbol methodSymbol)
+    private void GenerateInstanceInGlobalCache(string structName)
     {
-        string returnType = ToDisplayString(methodSymbol.ReturnType);
-
-        string methodName = methodSymbol.Name;
-        _nameTable.Add(methodName);
-
-        string genericArgs = "";
-        string typeContraints = "";
-        if (methodSymbol.IsGenericMethod)
+        INamedTypeSymbol attributeSymbol = _context.Compilation.GetTypeByMetadataName("NodeApi.TypedModel.GenerateInstanceInGlobalCacheAttribute")
+            ?? throw new Exception("Symbol not found for GenerateInstanceInGlobalCacheAttribute");
+        AttributeData? attributeData = _structSymbol.GetAttributes().SingleOrDefault(a => a.AttributeClass?.Equals(attributeSymbol, SymbolEqualityComparer.Default) ?? false);
+        if (attributeData is not null)
         {
-            genericArgs = "<" + string.Join(", ", methodSymbol.TypeParameters.Select(p => ToDisplayString(p))) + ">";
+            TypedConstant globalPropertyNameConst = attributeData.ConstructorArguments.FirstOrDefault();
+            string globalPropertyName = globalPropertyNameConst.Value is object value ? value.ToString() : structName;
 
-            foreach (ITypeParameterSymbol p in methodSymbol.TypeParameters)
+            _s++;
+            _s += $"public partial struct {structName}";
+            _s += "{";
+            _s += $"public static {structName} Instance => GlobalCache.{globalPropertyName};";
+            _s += "}";
+            _s++;
+            _s += $"public partial class GlobalCache";
+            _s += "{";
+            _s += $"public static {structName} {globalPropertyName} => ({structName})GetValue(CacheId.{globalPropertyName});";
+            _s += $"private partial class CacheId {{ public static readonly CacheId {globalPropertyName} = new CacheId(nameof({globalPropertyName})); }}";
+            _s += "}";
+        }
+    }
+
+    private void GenerateStaticInterfaceMembers(string structName, string targetName, INamedTypeSymbol interfaceSymbol)
+    {
+        foreach (var member in interfaceSymbol.GetMembers())
+        {
+            if (member.IsStatic)
             {
-                if (p.HasValueTypeConstraint)
-                {
-                    string constraintTypes = string.Join(", ", p.ConstraintTypes.Select(c => ToDisplayString(c)));
-                    typeContraints += $"\n    where {ToDisplayString(p)} : struct, {constraintTypes}";
-                }
+                continue;
+            }
+
+            if (member is IPropertySymbol propertySymbol)
+            {
+                GenerateStaticProperty(propertySymbol, structName);
+            }
+            else if (member is IMethodSymbol methodSymbol)
+            {
+                GenerateStaticMethod(methodSymbol, structName, targetName);
             }
         }
-
-        Func<IParameterSymbol, string?> getDefaultValue = p => p.HasExplicitDefaultValue ? p.ExplicitDefaultValue?.ToString() : null;
-        Func<IParameterSymbol, string> assignDefault = p => (getDefaultValue(p) is string value) ? " = " + value : "";
-        Func<IParameterSymbol, string> parameterString = p => $"{ToDisplayString(p.Type)} {p.Name}{assignDefault(p)}";
-        string parameters = string.Join(", ", methodSymbol.Parameters.Select(p => parameterString(p)));
-
-        string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
-
-        if (methodName == "New")
-        {
-            GenerateNewMethod(returnType, genericArgs, parameters, typeContraints, args);
-        }
-        else if (methodName == "Call")
-        {
-            GenerateInvokeMethod(returnType, genericArgs, parameters, typeContraints, args);
-        }
-        else
-        {
-            GenerateCallMethod(returnType, methodName, genericArgs, parameters, typeContraints, args);
-        }
-    }
-
-    private void GenerateNewMethod(string returnType, string genericArgs, string parameters, string typeContraints, string args)
-    {
-        _source += $$"""
-            public {{returnType}} New{{genericArgs}}({{parameters}}){{typeContraints}}
-                => ({{returnType}})_value.CallAsConstructor({{args}});
-            """;
-    }
-
-    private void GenerateInvokeMethod(string returnType, string genericArgs, string parameters, string typeContraints, string args)
-    {
-        args = args.Length > 0 ? ", " + args : "";
-        _source += $$"""
-            public {{returnType}} Call{{genericArgs}}({{parameters}}){{typeContraints}}
-                => ({{returnType}})_value.Call(JSValue.Undefined{{args}});
-            """;
-    }
-
-    private void GenerateCallMethod(string returnType, string methodName, string genericArgs, string parameters, string typeContraints, string args)
-    {
-        args = args.Length > 0 ? ", " + args : "";
-        _source += $$"""
-            public {{returnType}} {{methodName}}{{genericArgs}}({{parameters}}){{typeContraints}}
-                => ({{returnType}})_value.CallMethod(NameTable.{{methodName}}{{args}});
-            """;
     }
 
     private void GenerateProperty(IPropertySymbol propertySymbol)
     {
         bool isReadonly = propertySymbol.SetMethod == null;
         string propertyType = ToDisplayString(propertySymbol.Type);
-        string propertyName = propertySymbol.Name;
 
         if (propertySymbol.Parameters.Length == 0)
         {
-            _nameTable.Add(propertySymbol.Name);
+            string propertyName = propertySymbol.Name;
+            _nameTable.Add(propertyName);
             if (isReadonly)
             {
-                GenerateReadonlyProperty(propertyType, propertyName);
+                _s += $"public {propertyType} {propertyName}";
+                _s.IncreaseIndent();
+                _s += $"=> ({propertyType})_value.GetProperty(NameTable.{propertyName});";
+                _s.DecreaseIndent();
             }
             else
             {
-                GenerateWritableProperty(propertyType, propertyName);
+                _s += $"public {propertyType} {propertyName}";
+                _s += "{";
+                _s += $"get => ({propertyType})_value.GetProperty(NameTable.{propertyName});";
+                _s += $"set => _value.SetProperty(NameTable.{propertyName}, value);";
+                _s += "}";
             }
+            _s++;
         }
         else if (propertySymbol.Parameters.Length == 1)
         {
@@ -698,51 +531,156 @@ public class StructCodeGenerator
             string parameterName = propertySymbol.Parameters[0].Name;
             if (isReadonly)
             {
-                GenerateReadonlyIndexer(propertyType, parameterType, parameterName);
+                _s += $"public {propertyType} this[{parameterType} {parameterName}]";
+                _s.IncreaseIndent();
+                _s += $"=> ({propertyType})_value.GetProperty({parameterName});";
+                _s.DecreaseIndent();
             }
             else
             {
-                GenerateWritableIndexer(propertyType, parameterType, parameterName);
+                _s += $"public {propertyType} this[{parameterType} {parameterName}]";
+                _s += "{";
+                _s += $"get => ({propertyType})_value.GetProperty({parameterName});";
+                _s += $"set => _value.SetProperty({parameterName}, value);";
+                _s += "}";
+            }
+            _s++;
+        }
+    }
+
+    private void GenerateMethod(IMethodSymbol methodSymbol)
+    {
+        if (methodSymbol.MethodKind != MethodKind.Ordinary)
+        {
+            return;
+        }
+
+        string methodName = methodSymbol.Name;
+        _nameTable.Add(methodName);
+
+        string returnType = ToDisplayString(methodSymbol.ReturnType);
+        string parameters = GetParameters(methodSymbol);
+        string typeParameters = GetTypeParameters(methodSymbol);
+        string args = GetArgs(methodSymbol, methodName);
+
+        _s += $"public {returnType} {methodName}{typeParameters}({parameters})";
+        _s.IncreaseIndent();
+        WriteTypeConstraints(methodSymbol);
+        switch (methodName)
+        {
+            case "New": _s += $"=> ({returnType})_value.CallAsConstructor({args});"; break;
+            case "Call": _s += $"=> ({returnType})_value.Call({args});"; break;
+            default: _s += $"=> ({returnType})_value.CallMethod({args});"; break;
+        };
+        _s.DecreaseIndent();
+        _s++;
+    }
+
+    private void WriteTypeConstraints(IMethodSymbol methodSymbol)
+    {
+        foreach (ITypeParameterSymbol typeParameter in methodSymbol.TypeParameters)
+        {
+            if (typeParameter.HasValueTypeConstraint)
+            {
+                string constraintTypes = string.Join(", ", typeParameter.ConstraintTypes.Select(t => ToDisplayString(t)));
+                _s += $"where {ToDisplayString(typeParameter)} : struct, {constraintTypes}";
             }
         }
     }
 
-    private void GenerateReadonlyProperty(string propertyType, string propertyName)
+    private string GetArgs(IMethodSymbol methodSymbol, string methodName)
     {
-        _source += $$"""
-            public {{propertyType}} {{propertyName}}
-                => ({{propertyType}})_value.GetProperty(NameTable.{{propertyName}});
-            """;
+        return string.Join(", ", GetFirstArg().Union(methodSymbol.Parameters.Select(p => p.Name)));
+
+        IEnumerable<string> GetFirstArg() => methodName switch
+        {
+            "New" => Enumerable.Empty<string>(),
+            "Call" => Enumerable.Repeat("JSValue.Undefined", 1),
+            _ => Enumerable.Repeat($"NameTable.{methodName}", 1)
+        };
     }
 
-    private void GenerateWritableProperty(string propertyType, string propertyName)
+    private string GetParameters(IMethodSymbol methodSymbol)
     {
-        _source += $$"""
-            public {{propertyType}} {{propertyName}}
-            {
-                get => ({{propertyType}})_value.GetProperty(NameTable.{{propertyName}});
-                set => _value.SetProperty(NameTable.{{propertyName}}, value);
-            }
-            """;
+        Func<IParameterSymbol, string?> getDefaultValue = p => p.HasExplicitDefaultValue ? p.ExplicitDefaultValue?.ToString() : null;
+        Func<IParameterSymbol, string> assignDefault = p => (getDefaultValue(p) is string value) ? " = " + value : "";
+        Func<IParameterSymbol, string> parameterString = p => $"{ToDisplayString(p.Type)} {p.Name}{assignDefault(p)}";
+        string parameters = string.Join(", ", methodSymbol.Parameters.Select(p => parameterString(p)));
+        return parameters;
     }
 
-    private void GenerateReadonlyIndexer(string propertyType, string parameterType, string parameterName)
+    private string GetTypeParameters(IMethodSymbol methodSymbol)
     {
-        _source += $$"""
-            public {{propertyType}} this[{{parameterType}} {{parameterName}}]
-                => ({{propertyType}})_value.GetProperty({{parameterName}});
-            """;
+        return (methodSymbol.IsGenericMethod)
+            ? "<" + string.Join(", ", methodSymbol.TypeParameters.Select(p => ToDisplayString(p))) + ">"
+            : "";
     }
 
-    private void GenerateWritableIndexer(string propertyType, string parameterType, string parameterName)
+    private void GenerateStaticProperty(IPropertySymbol propertySymbol, string constructorName)
     {
-        _source += $$"""
-            public {{propertyType}} this[{{parameterType}} {{parameterName}}]
-            {
-                get => ({{propertyType}})_value.GetProperty({{parameterName}});
-                set => _value.SetProperty({{parameterName}}, value);
-            }
-            """;
+        if (propertySymbol.IsStatic || propertySymbol.Parameters.Length > 0)
+        {
+            return;
+        }
+
+        bool isReadonly = propertySymbol.SetMethod == null;
+        string propertyType = ToDisplayString(propertySymbol.Type);
+        string propertyName = propertySymbol.Name;
+        _nameTable.Add(propertyName);
+
+        if (isReadonly)
+        {
+            _s += $"public static {propertyType} {propertyName}";
+            _s.IncreaseIndent();
+            _s += $"=> ({propertyType})((JSValue){constructorName}.Instance).GetProperty(NameTable.{propertyName});";
+            _s.DecreaseIndent();
+        }
+        else
+        {
+            _s += $"public static {propertyType} {propertyName}";
+            _s += "{";
+            _s += $"get => ({propertyType})((JSValue){constructorName}.Instance).GetProperty(NameTable.{propertyName});";
+            _s += $"set => ((JSValue){constructorName}.Instance).SetProperty(NameTable.{propertyName}, value);";
+            _s += "}";
+        }
+        _s++;
+    }
+
+    private void GenerateStaticMethod(IMethodSymbol methodSymbol, string constructorType, string targetName)
+    {
+        if (methodSymbol.MethodKind != MethodKind.Ordinary)
+        {
+            return;
+        }
+
+        string methodName = methodSymbol.Name;
+        _nameTable.Add(methodName);
+
+        string returnType = ToDisplayString(methodSymbol.ReturnType);
+        string parameters = GetParameters(methodSymbol);
+        string typeParameters = GetTypeParameters(methodSymbol);
+        string args = GetArgs(methodSymbol, methodName);
+
+        if (methodName == "New")
+        {
+            // Generate C# constructor instead of a static method.
+            _s += $"public {targetName}{typeParameters}({parameters})";
+        }
+        else
+        {
+            _s += $"public static {returnType} {methodName}{typeParameters}({parameters})";
+        }
+
+        _s.IncreaseIndent();
+        WriteTypeConstraints(methodSymbol);
+        switch (methodName)
+        {
+            case "New": _s += $"=> _value = ((JSValue){constructorType}.Instance).CallAsConstructor({args});"; break;
+            case "Call": _s += $"=> ({returnType})((JSValue){constructorType}.Instance).Call({args});"; break;
+            default: _s += $"=> ({returnType})((JSValue){constructorType}.Instance).CallMethod({args});"; break;
+        };
+        _s.DecreaseIndent();
+        _s++;
     }
 
     private string ToDisplayString(ITypeSymbol typeSymbol)
