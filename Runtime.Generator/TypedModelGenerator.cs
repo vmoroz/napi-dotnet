@@ -24,24 +24,21 @@ public class TypedModelGenerator : ISourceGenerator
     public void Execute(GeneratorExecutionContext context)
     {
         // retrieve the populated receiver 
-        if (!(context.SyntaxContextReceiver is SyntaxReceiver syntaxReceiver))
+        if (context.SyntaxContextReceiver is not SyntaxReceiver syntaxReceiver)
         {
             return;
         }
 
-        INamedTypeSymbol interfaceAttributeSymbol = context.Compilation.GetTypeByMetadataName("NodeApi.TypedModel.TypedInterfaceAttribute")
-            ?? throw new Exception("Symbol not found for TypedInterfaceAttribute");
-
         HashSet<string> nameTable = new HashSet<string>();
-        HashSet<string> uniqueFileNames = new HashSet<string>();
 
         // Generate typed interfaces
         foreach (INamedTypeSymbol interfaceSymbol in syntaxReceiver.TypedInterfaces)
         {
-            (string source, string fileName) = ProcessTypedInterface(interfaceSymbol, uniqueFileNames, nameTable, interfaceAttributeSymbol, context);
-            if (!string.IsNullOrEmpty(source) && !string.IsNullOrEmpty(fileName))
+            var codeGenerator = new InterfaceCodeGenerator(interfaceSymbol, nameTable, context);
+            string source = codeGenerator.Execute();
+            if (!string.IsNullOrEmpty(codeGenerator.FileName))
             {
-                context.AddSource($"{fileName}.g.cs", SourceText.From(source, Encoding.UTF8));
+                context.AddSource($"{codeGenerator.FileName}.g.cs", SourceText.From(source, Encoding.UTF8));
             }
         }
 
@@ -60,211 +57,6 @@ public class TypedModelGenerator : ISourceGenerator
             string source = ProcessNameTable(nameTable);
             context.AddSource($"NameTable.g.cs", SourceText.From(source, Encoding.UTF8));
         }
-    }
-
-    private (string structSource, string fileName) ProcessTypedInterface(
-        INamedTypeSymbol interfaceSymbol,
-        HashSet<string> uniqueFileNames,
-        HashSet<string> nameTable,
-        INamedTypeSymbol interfaceAttributeSymbol,
-        GeneratorExecutionContext context)
-    {
-        if (!interfaceSymbol.ContainingSymbol.Equals(interfaceSymbol.ContainingNamespace, SymbolEqualityComparer.Default))
-        {
-            throw new Exception($"Interface must be in a namespace: {interfaceSymbol.Name}");
-        }
-
-        // Get the name of the struct to be generated.
-        AttributeData attributeData = interfaceSymbol.GetAttributes().Single(a => a.AttributeClass?.Equals(interfaceAttributeSymbol, SymbolEqualityComparer.Default) ?? false);
-        TypedConstant overridenNameOpt = attributeData.NamedArguments.SingleOrDefault(kvp => kvp.Key == "Name").Value;
-        string structName = ChooseName(interfaceSymbol.Name, overridenNameOpt);
-
-        string namespaceName = interfaceSymbol.ContainingNamespace.ToDisplayString();
-        string fileName = structName;
-        string structBaseType = interfaceSymbol.Name;
-        if (interfaceSymbol.IsGenericType)
-        {
-            if (interfaceSymbol.TypeParameters.Length != 1)
-            {
-                throw new Exception($"We do not support more than one generic type parameter: {interfaceSymbol.Name}.");
-            }
-            if (interfaceSymbol.TypeParameters[0].Name != "TSelf")
-            {
-                throw new Exception($"Generic type parameter name must be TSelf: {interfaceSymbol.Name}.");
-            }
-            structBaseType += "<" + structName + ">";
-        }
-
-        if (uniqueFileNames.Contains(fileName))
-        {
-            return ("", "");
-        }
-
-        uniqueFileNames.Add(fileName);
-
-        // begin building the generated source
-        StringBuilder source = new StringBuilder($@"
-namespace {namespaceName}
-{{
-    public partial struct {structName} : {structBaseType}
-    {{
-        private JSValue _value;
-
-        public static explicit operator {structName}(JSValue value) => new {structName} {{ _value = value }};
-        public static implicit operator JSValue({structName} value) => value._value;
-
-        // Map Undefined to Nullable
-        public static explicit operator {structName}?(JSValue value)
-            => value.TypeOf() != JSValueType.Undefined ? ({structName})value : null;
-        public static implicit operator JSValue({structName}? value)
-            => value is {structName} notNullValue ? notNullValue._value : JSValue.Undefined;
-");
-
-        foreach (var member in interfaceSymbol.GetMembers())
-        {
-            if (member is IPropertySymbol propertySymbol)
-            {
-                bool isWritable = propertySymbol.SetMethod != null;
-                string typeName = ToDisplayString(propertySymbol.Type);
-
-                if (propertySymbol.Parameters.Length == 0)
-                {
-                    nameTable.Add(propertySymbol.Name);
-
-                    source.Append($@"
-        public {typeName} {propertySymbol.Name}
-        {{
-            get => ({typeName})_value.GetProperty(NameTable.{propertySymbol.Name});");
-
-                    if (isWritable)
-                    {
-                        source.Append($@"
-            set => _value.SetProperty(NameTable.{propertySymbol.Name}, value);");
-                    }
-
-                    source.Append(@"
-        }
-");
-                }
-                else if (propertySymbol.Parameters.Length == 1)
-                {
-                    string parameterName = propertySymbol.Parameters[0].Name;
-                    string parameterType = ToDisplayString(propertySymbol.Parameters[0].Type);
-                    source.Append($@"
-        public {typeName} this[{parameterType} {parameterName}]
-        {{
-            get => ({typeName})_value.GetProperty({parameterName});");
-
-                    if (isWritable)
-                    {
-                        source.Append($@"
-            set => _value.SetProperty({parameterName}, value);");
-                    }
-
-                    source.Append(@"
-        }
-");
-                }
-            }
-            else if (member is IMethodSymbol methodSymbol)
-            {
-                if (methodSymbol.MethodKind != MethodKind.Ordinary)
-                {
-                    continue;
-                }
-
-                string methodName = methodSymbol.Name;
-                nameTable.Add(methodName);
-
-                string genericArgs = "";
-                string typeContraints = "";
-                if (methodSymbol.IsGenericMethod)
-                {
-                    genericArgs = "<" + string.Join(", ", methodSymbol.TypeParameters.Select(p => ToDisplayString(p))) + ">";
-
-                    foreach (ITypeParameterSymbol p in methodSymbol.TypeParameters)
-                    {
-                        if (p.HasValueTypeConstraint)
-                        {
-                            string constraintTypes = string.Join(", ", p.ConstraintTypes.Select(c => ToDisplayString(c)));
-                            typeContraints += $@"
-            where {ToDisplayString(p)} : struct, {constraintTypes}";
-                        }
-                    }
-                }
-
-                string parameters = string.Join(", ", methodSymbol.Parameters.Select(p
-                    => ToDisplayString(p.Type)
-                    + " "
-                    + p.Name
-                    + (p.HasExplicitDefaultValue ? " = " + (p.ExplicitDefaultValue is object o ? o.ToString() : "null") : "")));
-                string returnTypeName = ToDisplayString(methodSymbol.ReturnType);
-                if (methodName == "New")
-                {
-                    string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
-                    source.Append($@"
-        public {returnTypeName} {methodName}{genericArgs}({parameters}){typeContraints}
-            => ({returnTypeName})_value.CallAsConstructor({args});
-");
-                }
-                else if (methodName == "Call")
-                {
-                    string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
-                    args = args.Length > 0 ? ", " + args : "";
-                    source.Append($@"
-        public {returnTypeName} {methodName}{genericArgs}({parameters}){typeContraints}
-            => ({returnTypeName})_value.Call(_value{args});
-");
-                }
-                else
-                {
-                    string args = string.Join(", ", methodSymbol.Parameters.Select(p => p.Name));
-                    args = args.Length > 0 ? ", " + args : "";
-                    source.Append($@"
-        public {returnTypeName} {methodName}{genericArgs}({parameters}){typeContraints}
-            => ({returnTypeName})_value.CallMethod(NameTable.{methodName}{args});
-");
-                }
-            }
-        }
-
-        source.Append(@"
-    }
-");
-        if (interfaceSymbol.Interfaces.Length == 0)
-        {
-            source.Append($@"
-    public partial interface {interfaceSymbol.Name} : IJSValueHolder<{structName}> {{ }}
-");
-        }
-
-        source.Append(@"
-}
-");
-
-        return (source.ToString(), fileName);
-    }
-
-    private string ChooseName(string interfaceName, TypedConstant overridenNameOpt)
-    {
-        if (!overridenNameOpt.IsNull && overridenNameOpt.Value is object value)
-        {
-            return value.ToString();
-        }
-
-        return interfaceName.TrimStart('I');
-    }
-
-    private string ToDisplayString(ITypeSymbol typeSymbol)
-    {
-        string typeName = typeSymbol.ToDisplayString();
-        // If type name starts with a lower case letter, then prefix it with '@'
-        int typeNameStart = typeName.LastIndexOf('.') + 1;
-        if (typeNameStart > 0 && char.IsLower(typeName[typeNameStart]))
-        {
-            typeName = typeName.Insert(typeNameStart, "@");
-        }
-        return typeName;
     }
 
     private string ProcessNameTable(HashSet<string> nameTable)
@@ -352,9 +144,9 @@ namespace NodeApi.TypedModel
 public class StructCodeGenerator
 {
     private INamedTypeSymbol _structSymbol;
-    private HashSet<string> _nameTable;
-    private GeneratorExecutionContext _context;
-    private SourceBuilder _s;
+    internal HashSet<string> _nameTable;
+    internal GeneratorExecutionContext _context;
+    internal SourceBuilder _s;
 
     public string FileName { get; private set; } = "";
 
@@ -362,14 +154,21 @@ public class StructCodeGenerator
         INamedTypeSymbol structSymbol,
         HashSet<string> nameTable,
         GeneratorExecutionContext context)
+        : this(nameTable, context)
     {
         _structSymbol = structSymbol;
+    }
+
+    public StructCodeGenerator(
+        HashSet<string> nameTable,
+        GeneratorExecutionContext context)
+    {
         _nameTable = nameTable;
         _context = context;
         _s = new SourceBuilder(indent: "    ");
     }
 
-    public string Execute()
+    public virtual string Execute()
     {
         if (!_structSymbol.ContainingSymbol.Equals(_structSymbol.ContainingNamespace, SymbolEqualityComparer.Default))
         {
@@ -435,7 +234,7 @@ public class StructCodeGenerator
         return _s.ToString();
     }
 
-    private void GenerateInterfaceMembers(INamedTypeSymbol interfaceSymbol)
+    internal void GenerateInterfaceMembers(INamedTypeSymbol interfaceSymbol)
     {
         foreach (ISymbol member in interfaceSymbol.GetMembers())
         {
@@ -696,9 +495,97 @@ public class StructCodeGenerator
     }
 }
 
-/// <summary>
-/// Naming constants used for analyzing and generating code.
-/// </summary>
+public class InterfaceCodeGenerator : StructCodeGenerator
+{
+    private INamedTypeSymbol _interfaceSymbol;
+
+    public string FileName { get; private set; } = "";
+
+    public InterfaceCodeGenerator(
+        INamedTypeSymbol interfaceSymbol,
+        HashSet<string> nameTable,
+        GeneratorExecutionContext context)
+        : base(nameTable, context)
+    {
+        _interfaceSymbol = interfaceSymbol;
+    }
+
+    public override string Execute()
+    {
+        if (!_interfaceSymbol.ContainingSymbol.Equals(_interfaceSymbol.ContainingNamespace, SymbolEqualityComparer.Default))
+        {
+            throw new Exception($"Interface must be in a namespace: {_interfaceSymbol.Name}");
+        }
+
+        INamedTypeSymbol interfaceAttributeSymbol = _context.Compilation.GetTypeByMetadataName("NodeApi.TypedModel.TypedInterfaceAttribute")
+            ?? throw new Exception("Symbol not found for TypedInterfaceAttribute");
+
+        // Get the name of the struct to be generated.
+        AttributeData attributeData = _interfaceSymbol.GetAttributes().Single(
+            a => a.AttributeClass?.Equals(interfaceAttributeSymbol, SymbolEqualityComparer.Default) ?? false);
+        TypedConstant overridenNameOpt = attributeData.NamedArguments.SingleOrDefault(kvp => kvp.Key == "Name").Value;
+        string structName = ChooseName(_interfaceSymbol.Name, overridenNameOpt);
+
+        string namespaceName = _interfaceSymbol.ContainingNamespace.ToDisplayString();
+        string fileName = structName;
+        string structBaseType = _interfaceSymbol.Name;
+        if (_interfaceSymbol.IsGenericType)
+        {
+            if (_interfaceSymbol.TypeParameters.Length != 1)
+            {
+                throw new Exception($"We do not support more than one generic type parameter: {_interfaceSymbol.Name}.");
+            }
+            if (_interfaceSymbol.TypeParameters[0].Name != "TSelf")
+            {
+                throw new Exception($"Generic type parameter name must be TSelf: {_interfaceSymbol.Name}.");
+            }
+            structBaseType += "<" + structName + ">";
+        }
+
+        _s += $"namespace {namespaceName};";
+        _s++;
+        _s += $"public partial struct {structName}";
+        _s += "{";
+        _s += "private JSValue _value;";
+        _s++;
+        _s += $"public static explicit operator {structName}(JSValue value) => new {structName} {{ _value = value }};";
+        _s += $"public static implicit operator JSValue({structName} value) => value._value;";
+        _s++;
+        _s += $"public static explicit operator {structName}?(JSValue value) => value.TypeOf() != JSValueType.Undefined ? ({structName})value : null;";
+        _s += $"public static implicit operator JSValue({structName}? value) => value is {structName} notNullValue ? notNullValue._value : JSValue.Undefined;";
+        _s++;
+
+        GenerateInterfaceMembers(_interfaceSymbol);
+
+        _s += "}";
+
+        FileName = fileName;
+        return _s.ToString();
+    }
+
+    private string ChooseName(string interfaceName, TypedConstant overridenNameOpt)
+    {
+        if (!overridenNameOpt.IsNull && overridenNameOpt.Value is object value)
+        {
+            return value.ToString();
+        }
+
+        return interfaceName.TrimStart('I');
+    }
+
+    private string ToDisplayString(ITypeSymbol typeSymbol)
+    {
+        string typeName = typeSymbol.ToDisplayString();
+        // If type name starts with a lower case letter, then prefix it with '@'
+        int typeNameStart = typeName.LastIndexOf('.') + 1;
+        if (typeNameStart > 0 && char.IsLower(typeName[typeNameStart]))
+        {
+            typeName = typeName.Insert(typeNameStart, "@");
+        }
+        return typeName;
+    }
+}
+
 internal class NameTable
 {
     public static readonly SyntaxToken IJSValueHolder = Identifier(nameof(IJSValueHolder));
