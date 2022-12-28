@@ -53,36 +53,10 @@ public class TypedModelGenerator : ISourceGenerator
         }
 
         {
-            // Generate the name table
-            string source = ProcessNameTable(nameTable);
+            var codeGenerator = new NameTableCodeGenerator(nameTable);
+            string source = codeGenerator.Execute();
             context.AddSource($"NameTable.g.cs", SourceText.From(source, Encoding.UTF8));
         }
-    }
-
-    private string ProcessNameTable(HashSet<string> nameTable)
-    {
-        List<string> sortedNames = nameTable.ToList();
-        sortedNames.Sort();
-
-        // begin building the generated source
-        StringBuilder source = new StringBuilder(@"
-namespace NodeApi.TypedModel
-{
-    public partial class NameTable
-    {");
-
-        foreach (var name in sortedNames)
-        {
-            source.Append($@"
-        public static JSValue {name} => GetStringName(nameof({name}));");
-        }
-
-        source.Append(@"
-    }
-}
-");
-
-        return source.ToString();
     }
 
     // Created on demand before each generation pass
@@ -583,6 +557,38 @@ public class InterfaceCodeGenerator : StructCodeGenerator
             typeName = typeName.Insert(typeNameStart, "@");
         }
         return typeName;
+    }
+}
+
+public class NameTableCodeGenerator
+{
+    internal HashSet<string> _nameTable;
+    internal SourceBuilder _s;
+
+    public NameTableCodeGenerator(HashSet<string> nameTable)
+    {
+        _nameTable = nameTable;
+        _s = new SourceBuilder(indent: "    ");
+    }
+
+    public string Execute()
+    {
+        List<string> sortedNames = _nameTable.ToList();
+        sortedNames.Sort();
+
+        _s += "namespace NodeApi.TypedModel;";
+        _s++;
+        _s += "public partial class NameTable";
+        _s += "{";
+
+        foreach (string name in sortedNames)
+        {
+            _s += $"public static JSValue {name} => GetStringName(nameof({name}));";
+        }
+
+        _s += "}";
+
+        return _s.ToString();
     }
 }
 
