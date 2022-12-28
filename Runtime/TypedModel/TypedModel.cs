@@ -153,7 +153,6 @@ public partial interface IString<TSelf> : IJSValueHolder<TSelf>
     @number indexOf(@string searchString, @number? position);
     @number lastIndexOf(@string searchString, @number? position);
     @number localeCompare(@string value);
-
     Nullable<RegExpMatchArray> match(OneOf<@string, RegExp> regexp);
     @string replace(OneOf<@string, RegExp> searchValue, @string replaceValue);
     @string replace(OneOf<@string, RegExp> searchValue, Function<@string /*substring*/ /*...args: any[]*/, @string> replacer);
