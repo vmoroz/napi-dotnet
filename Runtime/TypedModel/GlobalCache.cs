@@ -5,14 +5,11 @@ namespace NodeApi.TypedModel;
 public partial class GlobalCache
 {
     [ThreadStatic] private static GlobalCache? s_instance;
-    private JSValue?[] _entries = new JSValue?[CacheId.Count];
+    private readonly JSValue?[] _entries = new JSValue?[CacheId.Count];
 
     private static JSValue GetValue(CacheId cacheId)
     {
-        if (s_instance is null)
-        {
-            s_instance = new GlobalCache();
-        }
+        s_instance ??= new GlobalCache();
 
         JSValue?[] entries = s_instance._entries;
         if (entries[cacheId.Index] is JSValue value && !value.Scope.IsDisposed)

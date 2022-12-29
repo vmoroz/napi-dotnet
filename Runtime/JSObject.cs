@@ -30,12 +30,9 @@ public struct JSObject : IEnumerable<(JSValue name, JSValue value)>, IEnumerable
     public void Add(JSValue name, JSValue value)
         => _value.SetProperty(name, value);
 
-    public JSObjectPropertyEnumerator GetEnumerator()
-        => new JSObjectPropertyEnumerator(_value);
+    public JSObjectPropertyEnumerator GetEnumerator() => new(_value);
 
-    IEnumerator<(JSValue name, JSValue value)> IEnumerable<(JSValue name, JSValue value)>.GetEnumerator()
-        => new JSObjectPropertyEnumerator(_value);
+    IEnumerator<(JSValue name, JSValue value)> IEnumerable<(JSValue name, JSValue value)>.GetEnumerator() => GetEnumerator();
 
-    IEnumerator IEnumerable.GetEnumerator()
-        => new JSObjectPropertyEnumerator(_value);
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }

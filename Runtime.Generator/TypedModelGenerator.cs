@@ -29,7 +29,7 @@ public class TypedModelGenerator : ISourceGenerator
             return;
         }
 
-        HashSet<string> nameTable = new HashSet<string>();
+        var nameTable = new HashSet<string>();
 
         // Generate typed interfaces
         foreach (INamedTypeSymbol interfaceSymbol in syntaxReceiver.TypedInterfaces)
@@ -94,7 +94,7 @@ public class TypedModelGenerator : ISourceGenerator
                 return false;
             }
 
-            foreach (var parentInterface in interfaceSymbol.AllInterfaces)
+            foreach (INamedTypeSymbol parentInterface in interfaceSymbol.AllInterfaces)
             {
                 if (parentInterface.Name == NameTable.IJSValueHolder.Text)
                 {
@@ -117,7 +117,7 @@ public class TypedModelGenerator : ISourceGenerator
 
 public class StructCodeGenerator
 {
-    private INamedTypeSymbol _structSymbol;
+    private readonly INamedTypeSymbol _structSymbol;
     internal HashSet<string> _nameTable;
     internal GeneratorExecutionContext _context;
     internal SourceBuilder _s;
@@ -184,7 +184,7 @@ public class StructCodeGenerator
 
         _s += "}";
 
-        var constructorInterface = _structSymbol.AllInterfaces.SingleOrDefault(i => i.Name == NameTable.ITypedConstructor.Text);
+        INamedTypeSymbol? constructorInterface = _structSymbol.AllInterfaces.SingleOrDefault(i => i.Name == NameTable.ITypedConstructor.Text);
         if (constructorInterface != null)
         {
             ITypeSymbol targetType = constructorInterface.TypeArguments[1];
@@ -194,7 +194,7 @@ public class StructCodeGenerator
             _s += $"public partial struct {targetName}";
             _s += "{";
 
-            foreach (var interfaceSymbol in _structSymbol.AllInterfaces)
+            foreach (INamedTypeSymbol interfaceSymbol in _structSymbol.AllInterfaces)
             {
                 GenerateStaticInterfaceMembers(structName, targetName, interfaceSymbol);
             }
@@ -254,7 +254,7 @@ public class StructCodeGenerator
 
     private void GenerateStaticInterfaceMembers(string structName, string targetName, INamedTypeSymbol interfaceSymbol)
     {
-        foreach (var member in interfaceSymbol.GetMembers())
+        foreach (ISymbol member in interfaceSymbol.GetMembers())
         {
             if (member.IsStatic)
             {
@@ -339,11 +339,11 @@ public class StructCodeGenerator
         _s += $"public {returnType} {methodName}{typeParameters}({parameters})";
         _s.IncreaseIndent();
         WriteTypeConstraints(methodSymbol);
-        switch (methodName)
+        _s += methodName switch
         {
-            case "New": _s += $"=> ({returnType})_value.CallAsConstructor({args});"; break;
-            case "Call": _s += $"=> ({returnType})_value.Call({args});"; break;
-            default: _s += $"=> ({returnType})_value.CallMethod({args});"; break;
+            "New" => $"=> ({returnType})_value.CallAsConstructor({args});",
+            "Call" => $"=> ({returnType})_value.Call({args});",
+            _ => $"=> ({returnType})_value.CallMethod({args});",
         };
         _s.DecreaseIndent();
         _s++;
@@ -375,11 +375,10 @@ public class StructCodeGenerator
 
     private string GetParameters(IMethodSymbol methodSymbol)
     {
-        Func<IParameterSymbol, string?> getDefaultValue = p => p.HasExplicitDefaultValue ? p.ExplicitDefaultValue?.ToString() : null;
-        Func<IParameterSymbol, string> assignDefault = p => (getDefaultValue(p) is string value) ? " = " + value : "";
-        Func<IParameterSymbol, string> parameterString = p => $"{ToDisplayString(p.Type)} {p.Name}{assignDefault(p)}";
-        string parameters = string.Join(", ", methodSymbol.Parameters.Select(p => parameterString(p)));
-        return parameters;
+        string? getDefaultValue(IParameterSymbol p) => p.HasExplicitDefaultValue ? p.ExplicitDefaultValue?.ToString() : null;
+        string assignDefault(IParameterSymbol p) => (getDefaultValue(p) is string value) ? " = " + value : "";
+        string parameterString(IParameterSymbol p) => $"{ToDisplayString(p.Type)} {p.Name}{assignDefault(p)}";
+        return string.Join(", ", methodSymbol.Parameters.Select(p => parameterString(p)));
     }
 
     private string GetTypeParameters(IMethodSymbol methodSymbol)
@@ -446,12 +445,13 @@ public class StructCodeGenerator
 
         _s.IncreaseIndent();
         WriteTypeConstraints(methodSymbol);
-        switch (methodName)
+        _s += methodName switch
         {
-            case "New": _s += $"=> _value = ((JSValue){constructorType}.Instance).CallAsConstructor({args});"; break;
-            case "Call": _s += $"=> ({returnType})((JSValue){constructorType}.Instance).Call({args});"; break;
-            default: _s += $"=> ({returnType})((JSValue){constructorType}.Instance).CallMethod({args});"; break;
+            "New" => $"=> _value = ((JSValue){constructorType}.Instance).CallAsConstructor({args});",
+            "Call" => $"=> ({returnType})((JSValue){constructorType}.Instance).Call({args});",
+            _ => $"=> ({returnType})((JSValue){constructorType}.Instance).CallMethod({args});",
         };
+        ;
         _s.DecreaseIndent();
         _s++;
     }
@@ -471,7 +471,7 @@ public class StructCodeGenerator
 
 public class InterfaceCodeGenerator : StructCodeGenerator
 {
-    private INamedTypeSymbol _interfaceSymbol;
+    private readonly INamedTypeSymbol _interfaceSymbol;
 
     public string FileName { get; private set; } = "";
 
@@ -545,18 +545,6 @@ public class InterfaceCodeGenerator : StructCodeGenerator
         }
 
         return interfaceName.TrimStart('I');
-    }
-
-    private string ToDisplayString(ITypeSymbol typeSymbol)
-    {
-        string typeName = typeSymbol.ToDisplayString();
-        // If type name starts with a lower case letter, then prefix it with '@'
-        int typeNameStart = typeName.LastIndexOf('.') + 1;
-        if (typeNameStart > 0 && char.IsLower(typeName[typeNameStart]))
-        {
-            typeName = typeName.Insert(typeNameStart, "@");
-        }
-        return typeName;
     }
 }
 

@@ -31,15 +31,11 @@ public struct JSArray : IEnumerable<JSValue>, IEnumerable
         set => _value.SetElement(index, value);
     }
 
-    public void Add(JSValue item)
-        => _value["push"].Call(_value, item);
+    public void Add(JSValue item) => _value["push"].Call(_value, item);
 
-    public JSArrayItemEnumerator GetEnumerator()
-    => new JSArrayItemEnumerator(_value);
+    public JSArrayItemEnumerator GetEnumerator() => new(_value);
 
-    IEnumerator<JSValue> IEnumerable<JSValue>.GetEnumerator()
-        => new JSArrayItemEnumerator(_value);
+    IEnumerator<JSValue> IEnumerable<JSValue>.GetEnumerator() => GetEnumerator();
 
-    IEnumerator IEnumerable.GetEnumerator()
-        => new JSArrayItemEnumerator(_value);
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }

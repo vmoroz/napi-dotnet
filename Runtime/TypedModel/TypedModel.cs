@@ -104,9 +104,9 @@ public partial struct Symbol : ISymbol<Symbol> { }
 // declare type PropertyKey = string | number | symbol;
 public partial struct PropertyKey : IJSValueHolder<PropertyKey>
 {
-    public static implicit operator PropertyKey(@string value) => new PropertyKey { _value = (JSValue)value };
-    public static implicit operator PropertyKey(@number value) => new PropertyKey { _value = (JSValue)value };
-    public static implicit operator PropertyKey(Symbol value) => new PropertyKey { _value = (JSValue)value };
+    public static implicit operator PropertyKey(@string value) => (PropertyKey)(JSValue)value;
+    public static implicit operator PropertyKey(@number value) => (PropertyKey)(JSValue)value;
+    public static implicit operator PropertyKey(Symbol value) => (PropertyKey)(JSValue)value;
 
     public static explicit operator @string(PropertyKey value) => (@string)value._value;
     public static explicit operator @number(PropertyKey value) => (@number)value._value;
