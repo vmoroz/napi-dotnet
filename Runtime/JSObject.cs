@@ -5,17 +5,15 @@ namespace NodeApi;
 
 public struct JSObject : IEnumerable<(JSValue name, JSValue value)>, IEnumerable
 {
-    JSValue _value;
+    private JSValue _value;
 
-    public static explicit operator JSObject(JSValue value) => new JSObject { _value = value };
+    public static explicit operator JSObject(JSValue value) => new() { _value = value };
     public static implicit operator JSValue(JSObject obj) => obj._value;
 
     public JSObject()
     {
         _value = JSNativeApi.CreateObject();
     }
-
-    public static JSObject Global => (JSObject)JSNativeApi.GetGlobal();
 
     public JSValue this[JSValue name]
     {

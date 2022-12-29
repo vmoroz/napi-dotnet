@@ -1,6 +1,4 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using static NodeApi.JSNativeApi.Interop;
 
 namespace NodeApi;
@@ -31,14 +29,10 @@ public struct JSValue
         _handle = handle;
     }
 
+    public napi_value? Handle => !Scope.IsDisposed ? _handle : null;
+
     public napi_value GetCheckedHandle()
-    {
-        if (Scope.IsDisposed)
-        {
-            throw new InvalidOperationException("The value handle is invalid because its scope is closed");
-        }
-        return _handle;
-    }
+        => Handle ?? throw new InvalidOperationException("The value handle is invalid because its scope is closed");
 
     public static JSValue Undefined => JSNativeApi.GetUndefined();
     public static JSValue Null => JSNativeApi.GetNull();
@@ -49,7 +43,25 @@ public struct JSValue
 
     public JSObject Properties => (JSObject)this;
 
-    public EnumerableItems Items => new EnumerableItems(this);
+    public JSArray Items => (JSArray)this;
+
+    public JSValue this[JSValue name]
+    {
+        get => this.GetProperty(name);
+        set => this.SetProperty(name, value);
+    }
+
+    public JSValue this[string name]
+    {
+        get => this.GetProperty(name);
+        set => this.SetProperty(name, value);
+    }
+
+    public JSValue this[int index]
+    {
+        get => this.GetElement(index);
+        set => this.SetElement(index, value);
+    }
 
     public static implicit operator JSValue(bool value) => JSNativeApi.GetBoolean(value);
     public static implicit operator JSValue(sbyte value) => JSNativeApi.CreateNumber(value);
@@ -80,46 +92,9 @@ public struct JSValue
     public static explicit operator double(JSValue value) => value.GetValueDouble();
     public static explicit operator string(JSValue value) => value.GetValueStringUtf16();
 
-    public JSValue this[JSValue name]
-    {
-        get => this.GetProperty(name);
-        set => this.SetProperty(name, value);
-    }
-
-    public JSValue this[string name]
-    {
-        get => this.GetProperty(name);
-        set => this.SetProperty(name, value);
-    }
-
-    public JSValue this[int index]
-    {
-        get => this.GetElement(index);
-        set => this.SetElement(index, value);
-    }
-
     public static explicit operator napi_value(JSValue value) => value.GetCheckedHandle();
-    public static explicit operator napi_value(JSValue? value) => value != null ? value.Value.GetCheckedHandle() : new napi_value(nint.Zero);
-
     public static implicit operator JSValue(napi_value handle) => new(handle);
+
+    public static explicit operator napi_value(JSValue? value) => value?.Handle ?? new napi_value(nint.Zero);
     public static implicit operator JSValue?(napi_value handle) => handle.Handle != nint.Zero ? new JSValue?(new JSValue(handle)) : null;
-
-    public struct EnumerableItems : IEnumerable<JSValue>, IEnumerable
-    {
-        private JSValue _value;
-
-        internal EnumerableItems(JSValue value)
-        {
-            _value = value;
-        }
-
-        public JSArrayItemEnumerator GetEnumerator()
-            => new JSArrayItemEnumerator(_value);
-
-        IEnumerator<JSValue> IEnumerable<JSValue>.GetEnumerator()
-            => new JSArrayItemEnumerator(_value);
-
-        IEnumerator IEnumerable.GetEnumerator()
-            => new JSArrayItemEnumerator(_value);
-    }
 }
