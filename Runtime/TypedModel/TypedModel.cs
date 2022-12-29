@@ -145,8 +145,8 @@ public partial interface IObject<TSelf> : IJSValueHolder<TSelf>
 public partial interface IObjectConstructor : ITypedConstructor<ObjectConstructor, Object>
 {
     Object New(@any? value);
-    @any Call();
-    @any Call(@any value);
+    @any Invoke();
+    @any Invoke(@any value);
     Object prototype { get; }
     @any getPrototypeOf(@any obj);
     PropertyDescriptor? getOwnPropertyDescriptor(@any obj, PropertyKey key);
@@ -205,7 +205,7 @@ public partial interface IString<TSelf> : IJSValueHolder<TSelf>
 public partial interface IStringConstructor : ITypedConstructor<StringConstructor, String>
 {
     String New(@any? value = null);
-    @string Call(@any? value = null);
+    @string Invoke(@any? value = null);
     String prototype { get; }
     @string fromCharCode(params @number[] codes);
 }
@@ -230,7 +230,7 @@ public partial interface IBoolean<TSelf> : IJSValueHolder<TSelf>
 public partial interface IBooleanConstructor : ITypedConstructor<BooleanConstructor, Boolean>
 {
     Boolean New(@any? value = null);
-    @boolean Call<T>(T? value) where T : struct, IJSValueHolder<T>;
+    @boolean Invoke<T>(T? value) where T : struct, IJSValueHolder<T>;
     Boolean prototype { get; }
 }
 
@@ -258,7 +258,7 @@ public partial interface INumber<TSelf> : IJSValueHolder<TSelf>
 public partial interface INumberConstructor : ITypedConstructor<NumberConstructor, Number>
 {
     Number New(@any? value = null);
-    @number Call(@any? value = null);
+    @number Invoke(@any? value = null);
     Number prototype { get; }
     @number MAX_VALUE { get; }
     @number MIN_VALUE { get; }
@@ -373,7 +373,7 @@ public partial interface IDateConstructor
     Date New(@number value);
     Date New(@string value);
     Date New(@number year, @number monthIndex, @number? date = null, @number? hours = null, @number? minutes = null, @number? seconds = null, @number? ms = null);
-    @string Call();
+    @string Invoke();
     Date prototype { get; }
     @number parse(@string s);
     @number UTC(@number year, @number monthIndex, @number? date = null, @number? hours = null, @number? minutes = null, @number? seconds = null, @number? ms = null);
@@ -424,8 +424,8 @@ public partial interface IRegExpConstructor
 {
     RegExp New(OneOf<RegExp, @string> pattern);
     RegExp New(@string pattern, @string? flags = null);
-    RegExp Call(OneOf<RegExp, @string> pattern);
-    RegExp Call(@string pattern, @string? flags = null);
+    RegExp Invoke(OneOf<RegExp, @string> pattern);
+    RegExp Invoke(@string pattern, @string? flags = null);
     RegExp prototype { get; }
 }
 
@@ -447,7 +447,7 @@ public partial interface IErrorConstructor<TSelf, TError> : IJSValueHolder<TSelf
     where TError : struct, IError<TError>
 {
     TError New(@string? message = null);
-    TError Call(@string? message = null);
+    TError Invoke(@string? message = null);
     TError prototype { get; }
 }
 
@@ -609,9 +609,9 @@ public partial interface IArrayConstructor<TSelf> : IJSValueHolder<TSelf>
     Array<@any> New(@number? arrayLength = null);
     Array<T> New<T>(@number arrayLength) where T : struct, IJSValueHolder<T>;
     Array<T> New<T>(params T[] items) where T : struct, IJSValueHolder<T>;
-    Array<@any> Call(@number? arrayLength = null);
-    Array<T> Call<T>(@number arrayLength) where T : struct, IJSValueHolder<T>;
-    Array<T> Call<T>(params T[] items) where T : struct, IJSValueHolder<T>;
+    Array<@any> Invoke(@number? arrayLength = null);
+    Array<T> Invoke<T>(@number arrayLength) where T : struct, IJSValueHolder<T>;
+    Array<T> Invoke<T>(params T[] items) where T : struct, IJSValueHolder<T>;
     //TODO: What does it mean that he result must be "arg is any[]"
     @boolean isArray(@any arg);
     Array<@any> prototype { get; }

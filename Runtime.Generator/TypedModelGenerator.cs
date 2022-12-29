@@ -342,7 +342,7 @@ public class StructCodeGenerator
         _s += methodName switch
         {
             "New" => $"=> ({returnType})_value.CallAsConstructor({args});",
-            "Call" => $"=> ({returnType})_value.Call({args});",
+            "Invoke" => $"=> ({returnType})_value.Call({args});",
             _ => $"=> ({returnType})_value.CallMethod({args});",
         };
         _s.DecreaseIndent();
@@ -368,7 +368,7 @@ public class StructCodeGenerator
         IEnumerable<string> GetFirstArg() => methodName switch
         {
             "New" => Enumerable.Empty<string>(),
-            "Call" => Enumerable.Repeat("JSValue.Undefined", 1),
+            "Invoke" => Enumerable.Repeat("JSValue.Undefined", 1),
             _ => Enumerable.Repeat($"NameTable.{methodName}", 1)
         };
     }
@@ -448,7 +448,7 @@ public class StructCodeGenerator
         _s += methodName switch
         {
             "New" => $"=> _value = ((JSValue){constructorType}.Instance).CallAsConstructor({args});",
-            "Call" => $"=> ({returnType})((JSValue){constructorType}.Instance).Call({args});",
+            "Invoke" => $"=> ({returnType})((JSValue){constructorType}.Instance).Call({args});",
             _ => $"=> ({returnType})((JSValue){constructorType}.Instance).CallMethod({args});",
         };
         ;
