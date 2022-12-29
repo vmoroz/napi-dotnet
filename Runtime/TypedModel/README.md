@@ -1,13 +1,62 @@
-In Typed Model we define a type system for Node-API that mimics the TypeScript type system.
+# Node-API Typed Model
 
-The C# type system may look similar to TypeScript. It allows to defined interfaces and other types.
+The C# Typed Model defines a type system for Node-API that mimics the TypeScript type system.
+
+The C# type system may look similar to TypeScript. It has interfaces and other types.
 But it also has a number of significant differences which cannot be mapped directly.
 For example, a C# interface is an abstract type definition that must be implemented by a class or a struct.
 In TypeScript an interface is a "typed view" to access already existing object properties.
-Thus, to implement TypeScript-like type system we must define a set of idioms that can express it using C#.
- We also want it to be efficient and do not take extra runtime resources. For that we prefer use of structs vs classes.
+Our goal is to implement a TypeScript-like type system we define a set of idioms that mimic the
+TypeScript behavior.
 
-== Interfaces.==
+What does the TypeScript give to developers?
+- TypeScript is a set of definitions that work on top of untyped JavaScript values.
+- The type definitions help Intellisense in code editors. E.g. they specify a set of object properties.
+- TypeScript allows to define types that are just a union of specific strings or
+  strings that match specific patterns.
+- The type definitions define rules for conversion between types. It is a compilation error
+  if we try to assign a value to a variable of incompatible type.
+
+We define the C# Node-API typed model to address the same concerns and use the following approach:
+- All types are structs that have a single `JSValue` field. They all are wrappers on top of
+  untyped JS values. C# structs help to avoid unnecessary memory allocations. They do not
+  support inheritance, but relationship between TypeScript types is much more complex and
+  the inheritance would not help much anyway. All such structs must be inherited from
+  the `IJSTypedValue` interface, or interfaces that are inherited from it.
+- Each struct defines properties and methods that access properties and methods of the
+  enclosed `JSValue`. They help to enable Intelisense in the code. We use code generator
+  to simplify implementation of such definitions. The generator reads definitions from the 
+  struct's base interfaces and generates them in the partial struct. All typed model
+  structs must be partial to support it. The generator skips generation of properties
+  and methods that are already defined in the code.
+- Complex type definitions such as a string unions, or when a set of properties is derived from
+  another type (e.g. `Readonly<T>`) are specified by special custom attributes.
+  These attributes are used by code generator to generate definitions or produce compilation errors.
+- All the type conversion rules are enforced by the code generator that acts in this case as code analyzer.
+  These rules can be quite complex and different from the typical C# inheritance model.
+  E.g. value of one type can be assign to a variable of another type if it have the same set of properties.
+
+## Base types
+
+JavaScript has the following types:
+- `undefined`
+- `null`
+- `boolean`
+- `number`
+- `string`
+- `symbol`
+- `object`
+- `function`
+- `bigint`
+
+In addition to them TypeScript defines the following types:
+
+- `any`
+- `never`
+- `unknown`
+- `void`
+
+In the Typed Model we define structs with the same name and the following behavior.
 
 TypeScript interface is a typed view to a JavaScript object's properties and methods.
 In Node-API Typed Model we represent an interface as a struct that wraps JSValue and provides properties
