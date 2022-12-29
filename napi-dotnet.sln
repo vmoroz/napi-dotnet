@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NodeApi.Generator", "Genera
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NodeApi.Runtime.Generator", "Runtime.Generator\NodeApi.Runtime.Generator.csproj", "{2ED839D5-82F3-4824-B5B9-60507442D667}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Root Files", "Root Files", "{56FAAFF0-3EFF-4925-A9B6-5C9760D780DA}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Top Level Files", "Top Level Files", "{56FAAFF0-3EFF-4925-A9B6-5C9760D780DA}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 		.gitignore = .gitignore
