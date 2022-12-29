@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using static NodeApi.JSNativeApi.Interop;
 
 namespace NodeApi;
@@ -14,14 +13,20 @@ public struct JSValue
 
     public JSValue(JSValueScope scope, napi_value handle)
     {
-        Contract.Requires(handle.Handle != nint.Zero, "handle must be not null");
+        if (handle.Handle == nint.Zero)
+        {
+            throw new ArgumentException($"{nameof(handle)} must not be null.");
+        }
         Scope = scope;
         _handle = handle;
     }
 
     public JSValue(napi_value handle)
     {
-        Contract.Requires(handle.Handle != nint.Zero, "handle must be not null");
+        if (handle.Handle == nint.Zero)
+        {
+            throw new ArgumentException($"{nameof(handle)} must not be null.");
+        }
         Scope = JSValueScope.Current ?? throw new InvalidOperationException("No current scope");
         _handle = handle;
     }
@@ -42,7 +47,7 @@ public struct JSValue
     public static JSValue False => JSNativeApi.GetBoolean(false);
     public static JSValue GetBoolean(bool value) => JSNativeApi.GetBoolean(value);
 
-    public EnumerableProperties Properties => new EnumerableProperties(this);
+    public JSObject Properties => (JSObject)this;
 
     public EnumerableItems Items => new EnumerableItems(this);
 
@@ -84,13 +89,13 @@ public struct JSValue
     public JSValue this[string name]
     {
         get => this.GetProperty(name);
-        set { this.SetProperty(name, value); }
+        set => this.SetProperty(name, value);
     }
 
     public JSValue this[int index]
     {
-        get { return this.GetElement(index); }
-        set { this.SetElement(index, value); }
+        get => this.GetElement(index);
+        set => this.SetElement(index, value);
     }
 
     public static explicit operator napi_value(JSValue value) => value.GetCheckedHandle();
@@ -98,25 +103,6 @@ public struct JSValue
 
     public static implicit operator JSValue(napi_value handle) => new(handle);
     public static implicit operator JSValue?(napi_value handle) => handle.Handle != nint.Zero ? new JSValue?(new JSValue(handle)) : null;
-
-    public struct EnumerableProperties : IEnumerable<(JSValue name, JSValue value)>, IEnumerable
-    {
-        private JSValue _value;
-
-        internal EnumerableProperties(JSValue value)
-        {
-            _value = value;
-        }
-
-        public JSObjectPropertyEnumerator GetEnumerator()
-            => new JSObjectPropertyEnumerator(_value);
-
-        IEnumerator<(JSValue name, JSValue value)> IEnumerable<(JSValue name, JSValue value)>.GetEnumerator()
-            => new JSObjectPropertyEnumerator(_value);
-
-        IEnumerator IEnumerable.GetEnumerator()
-            => new JSObjectPropertyEnumerator(_value);
-    }
 
     public struct EnumerableItems : IEnumerable<JSValue>, IEnumerable
     {
