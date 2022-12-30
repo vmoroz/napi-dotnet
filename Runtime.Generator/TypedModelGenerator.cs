@@ -173,7 +173,7 @@ public class StructCodeGenerator
         _s += $"public static explicit operator {structName}(JSValue value) => new {structName} {{ _value = value }};";
         _s += $"public static implicit operator JSValue({structName} value) => value._value;";
         _s++;
-        _s += $"public static explicit operator {structName}?(JSValue value) => value.TypeOf() != JSValueType.Undefined ? ({structName})value : null;";
+        _s += $"public static explicit operator {structName}?(JSValue value) => value.TypeOf() != JSValueType.Undefined ? ({structName}?)({structName})value : null;";
         _s += $"public static implicit operator JSValue({structName}? value) => value is {structName} notNullValue ? notNullValue._value : JSValue.Undefined;";
         _s++;
 
@@ -525,7 +525,7 @@ public class InterfaceCodeGenerator : StructCodeGenerator
         _s += $"public static explicit operator {structName}(JSValue value) => new {structName} {{ _value = value }};";
         _s += $"public static implicit operator JSValue({structName} value) => value._value;";
         _s++;
-        _s += $"public static explicit operator {structName}?(JSValue value) => value.TypeOf() != JSValueType.Undefined ? ({structName})value : null;";
+        _s += $"public static explicit operator {structName}?(JSValue value) => value.TypeOf() != JSValueType.Undefined ? ({structName}?)({structName})value : null;";
         _s += $"public static implicit operator JSValue({structName}? value) => value is {structName} notNullValue ? notNullValue._value : JSValue.Undefined;";
         _s++;
 
