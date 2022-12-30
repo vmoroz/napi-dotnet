@@ -3,6 +3,18 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace NodeApi.TypedModel;
 
+[AttributeUsage(AttributeTargets.Struct, Inherited = false)]
+sealed class TypedValueAttribute : Attribute
+{
+    public JSValueType ValueType { get; init; }
+
+    [SetsRequiredMembers]
+    public TypedValueAttribute(JSValueType valueType)
+    {
+        ValueType = valueType;
+    }
+}
+
 [AttributeUsage(AttributeTargets.Interface, Inherited = false, AllowMultiple = true)]
 sealed class TypedInterfaceAttribute : Attribute
 {
