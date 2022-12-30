@@ -14,7 +14,7 @@ public partial class TestObject
 
     private static JSValue TestGetter(JSCallbackArgs args)
     {
-        return JSNativeApi.GetBoolean(s_testValue);
+        return JSValue.GetBoolean(s_testValue);
     }
 
     private static JSValue TestSetter(JSCallbackArgs args)
@@ -104,7 +104,7 @@ public partial class TestObject
 
     private static JSValue CreateObjectUsingMagic(JSCallbackArgs args)
     {
-        JSValue obj = JSNativeApi.CreateObject();
+        JSValue obj = JSValue.CreateObject();
         obj["cp_false"] = false;
         obj["cp_true"] = true;
         obj["s_true"] = true;
@@ -155,7 +155,7 @@ public partial class TestObject
 
     public static JSValue Init()
     {
-        JSValue exports = JSNativeApi.CreateObject();
+        JSValue exports = JSValue.CreateObject();
 
         exports["GetPropertyNames"] = (JSCallback)GetPropertyNames;
         exports["defineProperties"] = (JSCallback)DefineProperties;

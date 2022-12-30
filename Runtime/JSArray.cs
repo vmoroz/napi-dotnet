@@ -15,12 +15,12 @@ public struct JSArray : IEnumerable<JSValue>, IEnumerable
 
     public JSArray()
     {
-        _value = JSNativeApi.CreateArray();
+        _value = JSValue.CreateArray();
     }
 
     public JSArray(int length)
     {
-        _value = JSNativeApi.CreateArray(length);
+        _value = JSValue.CreateArray(length);
     }
 
     public int Length => _value.GetArrayLength();

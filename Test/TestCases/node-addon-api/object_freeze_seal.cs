@@ -20,7 +20,7 @@ public partial class TestObjectFreezeSeal
 
     public static JSValue Init()
     {
-        JSValue exports = JSNativeApi.CreateObject();
+        JSValue exports = JSValue.CreateObject();
         exports["freeze"] = (JSCallback)Freeze;
         exports["seal"] = (JSCallback)Seal;
         return exports;

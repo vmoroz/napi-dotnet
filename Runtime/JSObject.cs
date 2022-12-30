@@ -12,7 +12,7 @@ public struct JSObject : IEnumerable<(JSValue name, JSValue value)>, IEnumerable
 
     public JSObject()
     {
-        _value = JSNativeApi.CreateObject();
+        _value = JSValue.CreateObject();
     }
 
     public JSValue this[JSValue name]

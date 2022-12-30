@@ -20,7 +20,7 @@ public partial class NameTable
 
         // TODO: implement Module Cache
 
-        value = JSNativeApi.CreateStringUtf16(cacheId.Name);
+        value = cacheId.Name;
         entries[cacheId.Index] = value;
         return value;
     }

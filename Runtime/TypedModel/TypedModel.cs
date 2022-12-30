@@ -43,16 +43,16 @@ public partial struct @boolean : ITypedValue<@boolean>
 [TypedValue(JSValueType.Number)]
 public partial struct @number : ITypedValue<@number>
 {
-    public static implicit operator @number(sbyte value) => (@number)JSNativeApi.CreateNumber(value);
-    public static implicit operator @number(byte value) => (@number)JSNativeApi.CreateNumber(value);
-    public static implicit operator @number(short value) => (@number)JSNativeApi.CreateNumber(value);
-    public static implicit operator @number(ushort value) => (@number)JSNativeApi.CreateNumber(value);
-    public static implicit operator @number(int value) => (@number)JSNativeApi.CreateNumber(value);
-    public static implicit operator @number(uint value) => (@number)JSNativeApi.CreateNumber(value);
-    public static implicit operator @number(long value) => (@number)JSNativeApi.CreateNumber(value);
-    public static implicit operator @number(ulong value) => (@number)JSNativeApi.CreateNumber(value);
-    public static implicit operator @number(float value) => (@number)JSNativeApi.CreateNumber(value);
-    public static implicit operator @number(double value) => (@number)JSNativeApi.CreateNumber(value);
+    public static implicit operator @number(sbyte value) => (@number)JSValue.CreateNumber(value);
+    public static implicit operator @number(byte value) => (@number)JSValue.CreateNumber(value);
+    public static implicit operator @number(short value) => (@number)JSValue.CreateNumber(value);
+    public static implicit operator @number(ushort value) => (@number)JSValue.CreateNumber(value);
+    public static implicit operator @number(int value) => (@number)JSValue.CreateNumber(value);
+    public static implicit operator @number(uint value) => (@number)JSValue.CreateNumber(value);
+    public static implicit operator @number(long value) => (@number)JSValue.CreateNumber(value);
+    public static implicit operator @number(ulong value) => (@number)JSValue.CreateNumber(value);
+    public static implicit operator @number(float value) => (@number)JSValue.CreateNumber(value);
+    public static implicit operator @number(double value) => (@number)JSValue.CreateNumber(value);
 
     public static explicit operator sbyte(@number value) => (sbyte)value._value.GetValueInt32();
     public static explicit operator byte(@number value) => (byte)value._value.GetValueUInt32();
@@ -69,13 +69,13 @@ public partial struct @number : ITypedValue<@number>
 [TypedValue(JSValueType.String)]
 public partial struct @string : ITypedValue<@string>
 {
-    public static implicit operator @string(string value) => (@string)JSNativeApi.CreateStringUtf16(value);
-    public static implicit operator @string(char[] value) => (@string)JSNativeApi.CreateStringUtf16(value);
-    public static implicit operator @string(Span<char> value) => (@string)JSNativeApi.CreateStringUtf16(value);
-    public static implicit operator @string(ReadOnlySpan<char> value) => (@string)JSNativeApi.CreateStringUtf16(value);
-    public static implicit operator @string(byte[] value) => (@string)JSNativeApi.CreateStringUtf8(value);
-    public static implicit operator @string(Span<byte> value) => (@string)JSNativeApi.CreateStringUtf8(value);
-    public static implicit operator @string(ReadOnlySpan<byte> value) => (@string)JSNativeApi.CreateStringUtf8(value);
+    public static implicit operator @string(string value) => (@string)JSValue.CreateStringUtf16(value);
+    public static implicit operator @string(char[] value) => (@string)JSValue.CreateStringUtf16(value);
+    public static implicit operator @string(Span<char> value) => (@string)JSValue.CreateStringUtf16(value);
+    public static implicit operator @string(ReadOnlySpan<char> value) => (@string)JSValue.CreateStringUtf16(value);
+    public static implicit operator @string(byte[] value) => (@string)JSValue.CreateStringUtf8(value);
+    public static implicit operator @string(Span<byte> value) => (@string)JSValue.CreateStringUtf8(value);
+    public static implicit operator @string(ReadOnlySpan<byte> value) => (@string)JSValue.CreateStringUtf8(value);
 
     public static explicit operator string(@string value) => value._value.GetValueStringUtf16();
     public static explicit operator char[](@string value) => value._value.GetValueStringUtf16AsCharArray();
@@ -85,29 +85,29 @@ public partial struct @string : ITypedValue<@string>
 [TypedValue(JSValueType.Symbol)]
 public partial struct @symbol : ITypedValue<@symbol>
 {
-    public static implicit operator @symbol(@string value) => (@symbol)JSNativeApi.CreateSymbol(value);
-    public static implicit operator @symbol(string value) => (@string)JSNativeApi.CreateSymbol(value);
-    public static implicit operator @symbol(ReadOnlySpan<char> value) => (@string)JSNativeApi.CreateSymbol(value);
-    public static implicit operator @symbol(ReadOnlySpan<byte> value) => (@string)JSNativeApi.CreateSymbol(value);
+    public static implicit operator @symbol(@string value) => (@symbol)JSValue.CreateSymbol(value);
+    public static implicit operator @symbol(string value) => (@string)JSValue.CreateSymbol(value);
+    public static implicit operator @symbol(ReadOnlySpan<char> value) => (@string)JSValue.CreateSymbol(value);
+    public static implicit operator @symbol(ReadOnlySpan<byte> value) => (@string)JSValue.CreateSymbol(value);
 }
 
 [TypedValue(JSValueType.Object)]
 public partial struct @object : ITypedValue<@object>
 {
-    public @object() => _value = JSNativeApi.CreateObject();
+    public @object() => _value = JSValue.CreateObject();
 }
 
 [TypedValue(JSValueType.BigInt)]
 public partial struct @bigint : ITypedValue<@bigint>
 {
-    public @bigint(int signBit, ReadOnlySpan<ulong> words) => _value = JSNativeApi.CreateBigInt(signBit, words);
+    public @bigint(int signBit, ReadOnlySpan<ulong> words) => _value = JSValue.CreateBigInt(signBit, words);
 
     public (long Value, bool isLossless) GetInt64Value() => (_value.GetValueBigIntInt64(out bool isLossless), isLossless);
     public (ulong Value, bool isLossless) GetUInt64Value() => (_value.GetValueBigIntUInt64(out bool isLossless), isLossless);
     public (ulong[] Words, int SignBit) GetWords() => (_value.GetValueBigIntWords(out int signBit), signBit);
 
-    public static implicit operator @bigint(long value) => (@bigint)JSNativeApi.CreateBigInt(value);
-    public static implicit operator @bigint(ulong value) => (@bigint)JSNativeApi.CreateBigInt(value);
+    public static implicit operator @bigint(long value) => (@bigint)JSValue.CreateBigInt(value);
+    public static implicit operator @bigint(ulong value) => (@bigint)JSValue.CreateBigInt(value);
 
     public static explicit operator (long Value, bool isLossless)(@bigint value) => value.GetInt64Value();
     public static explicit operator (ulong Value, bool isLossless)(@bigint value) => value.GetUInt64Value();

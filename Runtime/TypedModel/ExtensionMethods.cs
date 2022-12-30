@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using static NodeApi.JSNativeApi.Interop;
 
 namespace NodeApi.TypedModel;
