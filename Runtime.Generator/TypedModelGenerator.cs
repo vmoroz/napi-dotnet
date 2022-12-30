@@ -373,9 +373,10 @@ public class StructCodeGenerator
 
     private string GetParameters(IMethodSymbol methodSymbol)
     {
+        string asParams(IParameterSymbol p) => (p.IsParams) ? "params " : "";
         string? getDefaultValue(IParameterSymbol p) => p.HasExplicitDefaultValue ? p.ExplicitDefaultValue?.ToString() : null;
         string assignDefault(IParameterSymbol p) => (getDefaultValue(p) is string value) ? " = " + value : "";
-        string parameterString(IParameterSymbol p) => $"{ToDisplayString(p.Type)} {p.Name}{assignDefault(p)}";
+        string parameterString(IParameterSymbol p) => $"{asParams(p)}{ToDisplayString(p.Type)} {p.Name}{assignDefault(p)}";
         return string.Join(", ", methodSymbol.Parameters.Select(p => parameterString(p)));
     }
 
