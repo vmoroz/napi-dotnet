@@ -4,6 +4,20 @@ using System;
 
 namespace NodeApi.TypedModel;
 
+public interface ITypedValue<TSelf> where TSelf : struct, ITypedValue<TSelf>
+{
+    public static abstract explicit operator TSelf(JSValue value);
+    public static abstract implicit operator JSValue(TSelf value);
+    public static abstract implicit operator JSValue(TSelf? value);
+}
+
+public interface ITypedConstructor<TSelf, TObject> : ITypedValue<TSelf>
+    where TSelf : struct, ITypedConstructor<TSelf, TObject>
+    where TObject : struct, ITypedValue<TObject>
+{
+    static abstract TSelf Instance { get; }
+}
+
 [TypedValue(JSValueType.Undefined)]
 public partial struct @undefined : ITypedValue<@undefined>
 {
@@ -101,6 +115,7 @@ public partial struct @bigint : ITypedValue<@bigint>
 }
 
 public partial struct @any : ITypedValue<@any> { }
+
 public partial struct @unknown : ITypedValue<@unknown> { }
 
 [TypedValue(JSValueType.Undefined)]
@@ -109,30 +124,12 @@ public partial struct @void : ITypedValue<@void> { }
 [TypedValue(JSValueType.Undefined)]
 public partial struct @never : ITypedValue<@never> { }
 
+public partial struct Nullable<T> : ITypedValue<Nullable<T>> { }
+
+public partial struct Readonly<T> : ITypedValue<Readonly<T>> { }
 
 public partial struct OneOf<T1, T2> : ITypedValue<OneOf<T1, T2>> { }
 
 public partial struct OneOf<T1, T2, T3> : ITypedValue<OneOf<T1, T2, T3>> { }
 
 public partial struct Intersect<T1, T2> : ITypedValue<Intersect<T1, T2>> { }
-
-public partial struct Readonly<T> : ITypedValue<Readonly<T>> { }
-
-public partial struct Nullable<T> : ITypedValue<Nullable<T>> { }
-
-
-public interface ITypedValue<TSelf> where TSelf : struct, ITypedValue<TSelf>
-{
-    public static abstract explicit operator TSelf(JSValue value);
-    public static abstract implicit operator JSValue(TSelf value);
-
-    public static abstract explicit operator TSelf?(JSValue value);
-    public static abstract implicit operator JSValue(TSelf? value);
-}
-
-public interface ITypedConstructor<TSelf, TObject> : ITypedValue<TSelf>
-    where TSelf : struct, ITypedConstructor<TSelf, TObject>
-    where TObject : struct, ITypedValue<TObject>
-{
-    static abstract TSelf Instance { get; }
-}
