@@ -19,7 +19,7 @@ public partial interface IGlobal
     @string encodeURIComponent(OneOf<@string, @number, @boolean> value);
 }
 
-public partial interface ISymbol<TSelf> : IJSValueHolder<TSelf>
+public partial interface ISymbol<TSelf> : ITypedValue<TSelf>
     where TSelf : struct, ISymbol<TSelf>
 {
     @string toString();
@@ -30,7 +30,7 @@ public partial struct Symbol : ISymbol<Symbol> { }
 
 //TODO: There must be a better way to declare type
 // declare type PropertyKey = string | number | symbol;
-public partial struct PropertyKey : IJSValueHolder<PropertyKey>
+public partial struct PropertyKey : ITypedValue<PropertyKey>
 {
     public static implicit operator PropertyKey(@string value) => (PropertyKey)(JSValue)value;
     public static implicit operator PropertyKey(@number value) => (PropertyKey)(JSValue)value;
@@ -58,7 +58,7 @@ public partial interface IPropertyDescriptorMap
     PropertyDescriptor this[PropertyKey key] { get; set; }
 }
 
-public partial interface IObject<TSelf> : IJSValueHolder<TSelf>
+public partial interface IObject<TSelf> : ITypedValue<TSelf>
     where TSelf : struct, IObject<TSelf>
 {
     Function constructor { get; set; }
@@ -81,11 +81,11 @@ public partial interface IObjectConstructor : ITypedConstructor<ObjectConstructo
     Array<@string> getOwnPropertyNames(@any obj);
     @any create(Nullable<@object> obj);
     @any create(Nullable<@object> obj, Intersect<PropertyDescriptorMap, ThisType<@any>> properties);
-    T defineProperty<T>(T obj, PropertyKey key, Intersect<PropertyDescriptor, ThisType<@any>> attributes) where T : struct, IJSValueHolder<T>;
-    T defineProperties<T>(T obj, Intersect<PropertyDescriptorMap, ThisType<@any>> properties) where T : struct, IJSValueHolder<T>;
-    T seal<T>(T obj) where T : struct, IJSValueHolder<T>;
-    Readonly<T> freeze<T>(T obj) where T : struct, IJSValueHolder<T>;
-    T preventExtensions<T>(T obj) where T : struct, IJSValueHolder<T>;
+    T defineProperty<T>(T obj, PropertyKey key, Intersect<PropertyDescriptor, ThisType<@any>> attributes) where T : struct, ITypedValue<T>;
+    T defineProperties<T>(T obj, Intersect<PropertyDescriptorMap, ThisType<@any>> properties) where T : struct, ITypedValue<T>;
+    T seal<T>(T obj) where T : struct, ITypedValue<T>;
+    Readonly<T> freeze<T>(T obj) where T : struct, ITypedValue<T>;
+    T preventExtensions<T>(T obj) where T : struct, ITypedValue<T>;
     @boolean isSealed(@any obj);
     @boolean isFrozen(@any obj);
     @boolean isExtensible(@any obj);
@@ -102,7 +102,7 @@ public partial interface IGlobal
     ObjectConstructor Object { get; set; }
 }
 
-public partial interface IString<TSelf> : IJSValueHolder<TSelf>
+public partial interface IString<TSelf> : ITypedValue<TSelf>
     where TSelf : struct, IString<TSelf>
 {
     @string toString();
@@ -147,7 +147,7 @@ public partial interface IGlobal
     StringConstructor String { get; set; }
 }
 
-public partial interface IBoolean<TSelf> : IJSValueHolder<TSelf>
+public partial interface IBoolean<TSelf> : ITypedValue<TSelf>
     where TSelf : struct, IBoolean<TSelf>
 {
     @boolean valueOf();
@@ -156,7 +156,7 @@ public partial interface IBoolean<TSelf> : IJSValueHolder<TSelf>
 public partial interface IBooleanConstructor : ITypedConstructor<BooleanConstructor, Boolean>
 {
     Boolean New(@any? value = null);
-    @boolean Invoke<T>(T? value) where T : struct, IJSValueHolder<T>;
+    @boolean Invoke<T>(T? value) where T : struct, ITypedValue<T>;
     Boolean prototype { get; }
 }
 
@@ -170,7 +170,7 @@ public partial interface IGlobal
     BooleanConstructor Boolean { get; set; }
 }
 
-public partial interface INumber<TSelf> : IJSValueHolder<TSelf>
+public partial interface INumber<TSelf> : ITypedValue<TSelf>
     where TSelf : struct, INumber<TSelf>
 {
     @string toString(@number? radix = null);
@@ -358,7 +358,7 @@ public partial interface IGlobal
     RegExpConstructor RegExp { get; set; }
 }
 
-public partial interface IError<TSelf> : IJSValueHolder<TSelf>
+public partial interface IError<TSelf> : ITypedValue<TSelf>
     where TSelf : struct, IError<TSelf>
 {
     @string name { get; set; }
@@ -366,7 +366,7 @@ public partial interface IError<TSelf> : IJSValueHolder<TSelf>
     @string? stack { get; set; }
 }
 
-public partial interface IErrorConstructor<TSelf, TError> : IJSValueHolder<TSelf>
+public partial interface IErrorConstructor<TSelf, TError> : ITypedValue<TSelf>
     where TSelf : struct, IErrorConstructor<TSelf, TError>
     where TError : struct, IError<TError>
 {
@@ -402,7 +402,7 @@ public partial interface IGlobal
     URIErrorConstructor URIError { get; set; }
 }
 
-public partial interface IJSON<TSelf> : IJSValueHolder<TSelf>
+public partial interface IJSON<TSelf> : ITypedValue<TSelf>
     where TSelf : struct, IJSON<TSelf>
 {
     @any parse(@string text, Function<@any /*this*/, @string /*key*/, @any /*value*/, @any>? reviver = null);
@@ -419,9 +419,9 @@ public partial interface IGlobal
     JSON JSON { get; set; }
 }
 
-public partial interface IReadonlyArray<TSelf, T> : IJSValueHolder<TSelf>
+public partial interface IReadonlyArray<TSelf, T> : ITypedValue<TSelf>
     where TSelf : struct, IReadonlyArray<TSelf, T>
-    where T : struct, IJSValueHolder<T>
+    where T : struct, ITypedValue<T>
 {
     @number length { get; }
     @string toString();
@@ -436,37 +436,37 @@ public partial interface IReadonlyArray<TSelf, T> : IJSValueHolder<TSelf>
     //TODO: How to simulate "is"?
     //Original: every<S extends T>(predicate: (value: T, index: number, array: readonly T[]) => value is S, thisArg?: any): this is readonly S[];
     @boolean every<S>(Function<T /*value*/, @number /*index*/, ReadonlyArray<T> /*array*/, @unknown> predicate, @any? thisArg = null)
-        where S : struct, IJSValueHolder<S>;
+        where S : struct, ITypedValue<S>;
     @boolean every(Function<T /*value*/, @number /*index*/, ReadonlyArray<T> /*array*/, @unknown> predicate, @any? thisArg = null);
     @boolean some(Function<T /*value*/, @number /*index*/, ReadonlyArray<T> /*array*/, @unknown> predicate, @any? thisArg = null);
     @void forEach(Function<T /*value*/, @number /*index*/, ReadonlyArray<T> /*array*/, @void> callbackfn, @any? thisArg = null);
     Array<U> map<U>(Function<T /*value*/, @number /*index*/, ReadonlyArray<T> /*array*/, U> callbackfn, @any? thisArg = null)
-        where U : struct, IJSValueHolder<U>;
+        where U : struct, ITypedValue<U>;
     //TODO: How to simulate extends?
     //TODO: How to simulate "is"?
     //Original: filter<S extends T>(predicate: (value: T, index: number, array: readonly T[]) => value is S, thisArg?: any): S[];
     Array<S> filter<S>(Function<T /*value*/, @number /*index*/, ReadonlyArray<T> /*array*/, @unknown> predicate, @any? thisArg = null)
-        where S : struct, IJSValueHolder<S>;
+        where S : struct, ITypedValue<S>;
     Array<T> filter(Function<T /*value*/, @number /*index*/, ReadonlyArray<T> /*array*/, @unknown> predicate, @any? thisArg = null);
     T reduce(Function<T /*previousValue*/, T /*currentValue*/, @number /*currentIndex*/, ReadonlyArray<T> /*array*/, T> callbackfn);
     T reduce(Function<T /*previousValue*/, T /*currentValue*/, @number /*currentIndex*/, ReadonlyArray<T> /*array*/, T> callbackfn, T initialValue);
     U reduce<U>(Function<U /*previousValue*/, T /*currentValue*/, @number /*currentIndex*/, ReadonlyArray<T> /*array*/, U> callbackfn, U initialValue)
-        where U : struct, IJSValueHolder<U>;
+        where U : struct, ITypedValue<U>;
     T reduceRight(Function<T /*previousValue*/, T /*currentValue*/, @number /*currentIndex*/, ReadonlyArray<T> /*array*/, T> callbackfn);
     T reduceRight(Function<T /*previousValue*/, T /*currentValue*/, @number /*currentIndex*/, ReadonlyArray<T> /*array*/, T> callbackfn, T initialValue);
     U reduceRight<U>(Function<U /*previousValue*/, T /*currentValue*/, @number /*currentIndex*/, ReadonlyArray<T> /*array*/, U> callbackfn, U initialValue)
-        where U : struct, IJSValueHolder<U>;
+        where U : struct, ITypedValue<U>;
     T this[@number index] { get; }
 }
 
 public partial struct ReadonlyArray<T> : IReadonlyArray<ReadonlyArray<T>, T>
-    where T : struct, IJSValueHolder<T>
+    where T : struct, ITypedValue<T>
 {
 }
 
-public partial interface IConcatArray<TSelf, T> : IJSValueHolder<TSelf>
+public partial interface IConcatArray<TSelf, T> : ITypedValue<TSelf>
     where TSelf : struct, IConcatArray<TSelf, T>
-    where T : struct, IJSValueHolder<T>
+    where T : struct, ITypedValue<T>
 {
     @number length { get; }
     T this[@number n] { get; }
@@ -475,13 +475,13 @@ public partial interface IConcatArray<TSelf, T> : IJSValueHolder<TSelf>
 }
 
 public partial struct ConcatArray<T> : IConcatArray<ConcatArray<T>, T>
-    where T : struct, IJSValueHolder<T>
+    where T : struct, ITypedValue<T>
 {
 }
 
-public partial interface IArray<TSelf, T> : IJSValueHolder<TSelf>
+public partial interface IArray<TSelf, T> : ITypedValue<TSelf>
     where TSelf : struct, IArray<TSelf, T>
-    where T : struct, IJSValueHolder<T>
+    where T : struct, ITypedValue<T>
 {
     @number length { get; set; }
     @string toString();
@@ -502,40 +502,40 @@ public partial interface IArray<TSelf, T> : IJSValueHolder<TSelf>
     @number indexOf(T searchElement, @number? fromIndex = null);
     @number lastIndexOf(T searchElement, @number? fromIndex = null);
     @boolean every<S>(Function<T /*value*/, @number /*index*/, Array<T> /*array*/, @unknown> predicate, @any? thisArg = null)
-        where S : struct, IJSValueHolder<S>;
+        where S : struct, ITypedValue<S>;
     @boolean every(Function<T /*value*/, @number /*index*/, Array<T> /*array*/, @unknown> predicate, @any? thisArg = null);
     @boolean some(Function<T /*value*/, @number /*index*/, Array<T> /*array*/, @unknown> predicate, @any? thisArg = null);
     @void forEach(Function<T /*value*/, @number /*index*/, Array<T> /*array*/, @void> callbackfn, @any? thisArg = null);
     Array<U> map<U>(Function<T /*value*/, @number /*index*/, Array<T> /*array*/, U> callbackfn, @any? thisArg = null)
-        where U : struct, IJSValueHolder<U>;
+        where U : struct, ITypedValue<U>;
     Array<S> filter<S>(Function<T /*value*/, @number /*index*/, Array<T> /*array*/, @unknown> predicate, @any? thisArg = null)
-        where S : struct, IJSValueHolder<S>;
+        where S : struct, ITypedValue<S>;
     Array<T> filter(Function<T /*value*/, @number /*index*/, Array<T> /*array*/, @unknown> predicate, @any? thisArg = null);
     T reduce(Function<T /*previousValue*/, T /*currentValue*/, @number /*currentIndex*/, Array<T> /*array*/, T> callbackfn);
     T reduce(Function<T /*previousValue*/, T /*currentValue*/, @number /*currentIndex*/, Array<T> /*array*/, T> callbackfn, T initialValue);
     U reduce<U>(Function<U /*previousValue*/, T /*currentValue*/, @number /*currentIndex*/, Array<T> /*array*/, U> callbackfn, U initialValue)
-        where U : struct, IJSValueHolder<U>;
+        where U : struct, ITypedValue<U>;
     T reduceRight(Function<T /*previousValue*/, T /*currentValue*/, @number /*currentIndex*/, Array<T> /*array*/, T> callbackfn);
     T reduceRight(Function<T /*previousValue*/, T /*currentValue*/, @number /*currentIndex*/, Array<T> /*array*/, T> callbackfn, T initialValue);
     U reduceRight<U>(Function<U /*previousValue*/, T /*currentValue*/, @number /*currentIndex*/, Array<T> /*array*/, U> callbackfn, U initialValue)
-        where U : struct, IJSValueHolder<U>;
+        where U : struct, ITypedValue<U>;
     T this[@number index] { get; set; }
 }
 
 public partial struct Array<T> : IArray<Array<T>, T>
-    where T : struct, IJSValueHolder<T>
+    where T : struct, ITypedValue<T>
 {
 }
 
-public partial interface IArrayConstructor<TSelf> : IJSValueHolder<TSelf>
+public partial interface IArrayConstructor<TSelf> : ITypedValue<TSelf>
     where TSelf : struct, IArrayConstructor<TSelf>
 {
     Array<@any> New(@number? arrayLength = null);
-    Array<T> New<T>(@number arrayLength) where T : struct, IJSValueHolder<T>;
-    Array<T> New<T>(params T[] items) where T : struct, IJSValueHolder<T>;
+    Array<T> New<T>(@number arrayLength) where T : struct, ITypedValue<T>;
+    Array<T> New<T>(params T[] items) where T : struct, ITypedValue<T>;
     Array<@any> Invoke(@number? arrayLength = null);
-    Array<T> Invoke<T>(@number arrayLength) where T : struct, IJSValueHolder<T>;
-    Array<T> Invoke<T>(params T[] items) where T : struct, IJSValueHolder<T>;
+    Array<T> Invoke<T>(@number arrayLength) where T : struct, ITypedValue<T>;
+    Array<T> Invoke<T>(params T[] items) where T : struct, ITypedValue<T>;
     //TODO: What does it mean that he result must be "arg is any[]"
     @boolean isArray(@any arg);
     Array<@any> prototype { get; }
@@ -550,9 +550,9 @@ public partial interface IGlobal
     ArrayConstructor Array { get; set; }
 }
 
-public partial interface ITypedPropertyDescriptor<TSelf, T> : IJSValueHolder<TSelf>
+public partial interface ITypedPropertyDescriptor<TSelf, T> : ITypedValue<TSelf>
     where TSelf : struct, ITypedPropertyDescriptor<TSelf, T>
-    where T : struct, IJSValueHolder<T>
+    where T : struct, ITypedValue<T>
 {
     @boolean? enumerable { get; set; }
     @boolean? configurable { get; set; }
@@ -564,22 +564,22 @@ public partial interface ITypedPropertyDescriptor<TSelf, T> : IJSValueHolder<TSe
 
 //TODO: Add Promise
 
-public partial interface IArrayLike<TSelf, T> : IJSValueHolder<TSelf>
+public partial interface IArrayLike<TSelf, T> : ITypedValue<TSelf>
     where TSelf : struct, IArrayLike<TSelf, T>
-    where T : struct, IJSValueHolder<T>
+    where T : struct, ITypedValue<T>
 {
     @number length { get; }
     T this[@number index] { get; }
 }
 
 public partial struct ArrayLike<T> : IArrayLike<ArrayLike<T>, T>
-    where T : struct, IJSValueHolder<T>
+    where T : struct, ITypedValue<T>
 {
 }
 
 //TODO: Add the utility types
 
-public partial interface IArrayBuffer<TSelf> : IJSValueHolder<TSelf>
+public partial interface IArrayBuffer<TSelf> : ITypedValue<TSelf>
     where TSelf : struct, IArrayBuffer<TSelf>
 {
     @number byteLength { get; }
@@ -590,7 +590,7 @@ public partial struct ArrayBuffer : IArrayBuffer<ArrayBuffer>
 {
 }
 
-public partial interface IArrayBufferTypes<TSelf> : IJSValueHolder<TSelf>
+public partial interface IArrayBufferTypes<TSelf> : ITypedValue<TSelf>
     where TSelf : struct, IArrayBufferTypes<TSelf>
 {
     ArrayBuffer ArrayBuffer { get; set; }
@@ -602,7 +602,7 @@ public partial struct ArrayBufferTypes : IArrayBufferTypes<ArrayBufferTypes>
 
 //type ArrayBufferLike = ArrayBufferTypes[keyof ArrayBufferTypes];
 
-public partial interface IArrayBufferConstructor<TSelf> : IJSValueHolder<TSelf>
+public partial interface IArrayBufferConstructor<TSelf> : ITypedValue<TSelf>
     where TSelf : struct, IArrayBufferConstructor<TSelf>
 {
     ArrayBuffer prototype { get; }
@@ -620,7 +620,7 @@ public partial interface IGlobal
     ArrayBufferConstructor ArrayBuffer { get; set; }
 }
 
-public partial interface IArrayBufferView<TSelf> : IJSValueHolder<TSelf>
+public partial interface IArrayBufferView<TSelf> : ITypedValue<TSelf>
     where TSelf : struct, IArrayBufferView<TSelf>
 {
     //TODO: ArrayBufferLike
@@ -633,7 +633,7 @@ public partial struct ArrayBufferView : IArrayBufferView<ArrayBufferView>
 {
 }
 
-public partial interface IDataView<TSelf> : IJSValueHolder<TSelf>
+public partial interface IDataView<TSelf> : ITypedValue<TSelf>
     where TSelf : struct, IDataView<TSelf>
 {
     ArrayBuffer buffer { get; }
@@ -661,7 +661,7 @@ public partial struct DataView : IDataView<DataView>
 {
 }
 
-public partial interface IDataViewConstructor<TSelf> : IJSValueHolder<TSelf>
+public partial interface IDataViewConstructor<TSelf> : ITypedValue<TSelf>
     where TSelf : struct, IDataViewConstructor<TSelf>
 {
     DataView prototype { get; }
@@ -677,7 +677,7 @@ public partial interface IGlobal
     DataViewConstructor DataView { get; set; }
 }
 
-public partial interface ITypedArray<TSelf> : IJSValueHolder<TSelf>
+public partial interface ITypedArray<TSelf> : ITypedValue<TSelf>
     where TSelf : struct, ITypedArray<TSelf>
 {
     @number BYTES_PER_ELEMENT { get; }
@@ -699,11 +699,11 @@ public partial interface ITypedArray<TSelf> : IJSValueHolder<TSelf>
     @number reduce(Function<@number /*previousValue*/, @number /*currentValue*/, @number/*currentIndex*/, TSelf /*array*/, @number> callbackfn);
     @number reduce(Function<@number /*previousValue*/, @number /*currentValue*/, @number/*currentIndex*/, TSelf /*array*/, @number> callbackfn, @number initialValue);
     U reduce<U>(Function<U /*previousValue*/, @number /*currentValue*/, @number /*currentIndex*/, TSelf /*array*/, U> callbackfn, U initialValue)
-        where U : struct, IJSValueHolder<U>;
+        where U : struct, ITypedValue<U>;
     @number reduceRight(Function<@number /*previousValue*/, @number /*currentValue*/, @number/*currentIndex*/, TSelf /*array*/, @number> callbackfn);
     @number reduceRight(Function<@number /*previousValue*/, @number /*currentValue*/, @number/*currentIndex*/, TSelf /*array*/, @number> callbackfn, @number initialValue);
     U reduceRight<U>(Function<@number /*previousValue*/, @number /*currentValue*/, @number/*currentIndex*/, TSelf /*array*/, U> callbackfn, U initialValue)
-        where U : struct, IJSValueHolder<U>;
+        where U : struct, ITypedValue<U>;
     TSelf reverse();
     @void set(ArrayLike<@number> array, @number? offset = null);
     TSelf slice(@number? start = null, @number? end = null);
@@ -716,7 +716,7 @@ public partial interface ITypedArray<TSelf> : IJSValueHolder<TSelf>
     @number this[@number index] { get; set; }
 }
 
-public partial interface ITypedArrayConstructor<TSelf, TTypedArray> : IJSValueHolder<TSelf>
+public partial interface ITypedArrayConstructor<TSelf, TTypedArray> : ITypedValue<TSelf>
     where TSelf : struct, ITypedArrayConstructor<TSelf, TTypedArray>
     where TTypedArray : struct, ITypedArray<TTypedArray>
 {
@@ -728,7 +728,7 @@ public partial interface ITypedArrayConstructor<TSelf, TTypedArray> : IJSValueHo
     TTypedArray of(params @number[] items);
     TTypedArray from(ArrayLike<@number> arrayLike);
     TTypedArray from<T>(ArrayLike<T> arrayLike, Function<T /*v*/, @number /*k*/, @number> mapfn, @any? thisArg = null)
-        where T : struct, IJSValueHolder<T>;
+        where T : struct, ITypedValue<T>;
 }
 
 public partial struct Int8Array : ITypedArray<Int8Array> { }
@@ -769,42 +769,42 @@ public partial struct Function : IFunction<Function>
 }
 
 public partial struct Function<TResult> : IFunction<Function<TResult>>
-    where TResult : struct, IJSValueHolder<TResult>
+    where TResult : struct, ITypedValue<TResult>
 {
 }
 
 public partial struct Function<TArg0, TResult>
     : IFunction<Function<TArg0, TResult>>
-    where TArg0 : struct, IJSValueHolder<TArg0>
-    where TResult : struct, IJSValueHolder<TResult>
+    where TArg0 : struct, ITypedValue<TArg0>
+    where TResult : struct, ITypedValue<TResult>
 {
 }
 
 
 public partial struct Function<TArg0, TArg1, TResult>
     : IFunction<Function<TArg0, TArg1, TResult>>
-    where TArg0 : struct, IJSValueHolder<TArg0>
-    where TArg1 : struct, IJSValueHolder<TArg1>
-    where TResult : struct, IJSValueHolder<TResult>
+    where TArg0 : struct, ITypedValue<TArg0>
+    where TArg1 : struct, ITypedValue<TArg1>
+    where TResult : struct, ITypedValue<TResult>
 {
 }
 
 public partial struct Function<TArg0, TArg1, TArg2, TResult>
     : IFunction<Function<TArg0, TArg1, TArg2, TResult>>
-    where TArg0 : struct, IJSValueHolder<TArg0>
-    where TArg1 : struct, IJSValueHolder<TArg1>
-    where TArg2 : struct, IJSValueHolder<TArg2>
-    where TResult : struct, IJSValueHolder<TResult>
+    where TArg0 : struct, ITypedValue<TArg0>
+    where TArg1 : struct, ITypedValue<TArg1>
+    where TArg2 : struct, ITypedValue<TArg2>
+    where TResult : struct, ITypedValue<TResult>
 {
 }
 
 public partial struct Function<TArg0, TArg1, TArg2, TArg3, TResult>
     : IFunction<Function<TArg0, TArg1, TArg2, TArg3, TResult>>
-    where TArg0 : struct, IJSValueHolder<TArg0>
-    where TArg1 : struct, IJSValueHolder<TArg1>
-    where TArg2 : struct, IJSValueHolder<TArg2>
-    where TArg3 : struct, IJSValueHolder<TArg3>
-    where TResult : struct, IJSValueHolder<TResult>
+    where TArg0 : struct, ITypedValue<TArg0>
+    where TArg1 : struct, ITypedValue<TArg1>
+    where TArg2 : struct, ITypedValue<TArg2>
+    where TArg3 : struct, ITypedValue<TArg3>
+    where TResult : struct, ITypedValue<TResult>
 {
 }
 
@@ -812,11 +812,11 @@ public partial struct Function<TArg0, TArg1, TArg2, TArg3, TResult>
  * Marker for contextual 'this' type
  */
 // interface ThisType<T> { }
-public partial struct ThisType<T> : IJSValueHolder<ThisType<T>>
+public partial struct ThisType<T> : ITypedValue<ThisType<T>>
 {
 }
 
-public interface IFunction<TSelf> : IJSValueHolder<TSelf>
+public interface IFunction<TSelf> : ITypedValue<TSelf>
     where TSelf : struct, IFunction<TSelf>
 {
 }

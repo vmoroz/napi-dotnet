@@ -56,7 +56,60 @@ In addition to them TypeScript defines the following types:
 - `unknown`
 - `void`
 
-In the Typed Model we define structs with the same name and the following behavior.
+In the Typed Model we define structs with the sames name and the following behavior:
+
+### `@undefined`
+
+The `@undefined` type represents the JavaScript `undefined` value.
+Use the `@undefined.Value` static property to get the value of the `@undefined` type.
+In C# code threat `@undefined.Value` te same way as the C# `null` type.
+So, TypeScript types like `string | undefined` can be written in C# as `@string?`.
+We use the `@undefined.Value` equivalence to `null` as a way to define optional object
+properties and optional function parameters.
+
+### `@null`
+
+The `@null` type represents the JavaScript `null` value.
+Use the `@null.Value` static property to get the value of the `@null` type.
+Note that `@null` is not the same as C# `null`. We map C# `null` to `@undefined`.
+
+### `@boolean`
+
+The `@boolean` type represents the JavaScript `boolean` primitive type.
+It has implicit conversion from C# `boolean` type, and explicit conversion back to it.
+Note the difference with the typed model `Boolean` type which is an object type
+corresponding to JavaScript `Boolean` object.
+
+### `@number`
+
+The `@number` type represents the JavaScript `number` primitive type.
+It has implicit conversions from C# numeric types `sbyte`, `byte`, `short`, `ushort`,
+`int`, `uint`, `long`, `ulong`, `float`, and `double`, and then explicit conversion
+back to them.
+Note the difference with the typed model `Number` type which is an object type
+corresponding to JavaScript `Number` object.
+
+### `@string`
+
+The `@string` type represents the JavaScript `string` primitive type.
+It has implicit conversions from C# UTF-16 string types `string`, `char[]`,
+`Span<char>`, `ReadOnlySpan<char>`, and from UTF-8 string types `byte[]`,
+`Span<byte>`, `ReadOnlySpan<byte>`. Them it has explicit conversion to `string`,
+`char[]`, and `byte[]`.
+Note the difference with the typed model `String` type which is an object type
+corresponding to JavaScript `String` object.
+
+### `@symbol`
+
+The `@symbol` type represents the JavaScript `symbol` primitive type.
+It has implicit conversions from C# UTF-16 string types `string`, `char[]`,
+`Span<char>`, `ReadOnlySpan<char>`, and from UTF-8 string types `byte[]`,
+`Span<byte>`, `ReadOnlySpan<byte>`. Them it has explicit conversion to `string`,
+`char[]`, and `byte[]`.
+Note the difference with the typed model `Symbol` type which is an object type
+corresponding to JavaScript `Symbol` object.
+
+### `@object`
 
 TypeScript interface is a typed view to a JavaScript object's properties and methods.
 In Node-API Typed Model we represent an interface as a struct that wraps JSValue and provides properties

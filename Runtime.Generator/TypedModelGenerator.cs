@@ -87,16 +87,16 @@ public class TypedModelGenerator : ISourceGenerator
             }
         }
 
-        private bool IsIJSValueHolderDerived(INamedTypeSymbol interfaceSymbol)
+        private bool IsITypedValueDerived(INamedTypeSymbol interfaceSymbol)
         {
-            if (interfaceSymbol.Name == NameTable.IJSValueHolder.Text)
+            if (interfaceSymbol.Name == NameTable.ITypedValue.Text)
             {
                 return false;
             }
 
             foreach (INamedTypeSymbol parentInterface in interfaceSymbol.AllInterfaces)
             {
-                if (parentInterface.Name == NameTable.IJSValueHolder.Text)
+                if (parentInterface.Name == NameTable.ITypedValue.Text)
                 {
                     return true;
                 }
@@ -107,7 +107,7 @@ public class TypedModelGenerator : ISourceGenerator
 
         private void AddStructToGenerate(INamedTypeSymbol structSymbol)
         {
-            if (IsIJSValueHolderDerived(structSymbol))
+            if (IsITypedValueDerived(structSymbol))
             {
                 Structs.Add(structSymbol);
             }
@@ -589,6 +589,6 @@ public class NameTableCodeGenerator
 
 internal class NameTable
 {
-    public static readonly SyntaxToken IJSValueHolder = Identifier(nameof(IJSValueHolder));
+    public static readonly SyntaxToken ITypedValue = Identifier(nameof(ITypedValue));
     public static readonly SyntaxToken ITypedConstructor = Identifier(nameof(ITypedConstructor));
 }
