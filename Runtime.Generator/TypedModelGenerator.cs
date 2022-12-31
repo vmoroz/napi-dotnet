@@ -155,12 +155,14 @@ public class StructCodeGenerator
         INamedTypeSymbol? constructorInterface = _structSymbol.AllInterfaces.SingleOrDefault(i => i.Name == NameTable.ITypedConstructor.Text);
         if (constructorInterface != null)
         {
-            ITypeSymbol targetType = constructorInterface.TypeArguments[1];
-            string targetName = targetType.ToDisplayString();
-            targetName = targetName.Substring(targetName.LastIndexOf('.') + 1);
+            INamedTypeSymbol targetType = (INamedTypeSymbol)constructorInterface.TypeArguments[1];
+            string targetName = targetType.Name;
+            string typeParams = (targetType.TypeParameters.Length > 0)
+                ? "<" + string.Join(", ", targetType.TypeParameters.Select(p => p.Name)) + ">"
+                : "";
 
             _s++;
-            _s += $"public partial struct {targetName}";
+            _s += $"public partial struct {targetName}{typeParams}";
             _s += "{";
 
             foreach (INamedTypeSymbol interfaceSymbol in _structSymbol.AllInterfaces)
@@ -406,12 +408,7 @@ public class StructCodeGenerator
         if (methodName == "New")
         {
             // Generate C# constructor instead of a static method.
-            int typeParamStart = targetName.IndexOf('<');
-            if (typeParamStart > 0)
-            {
-                targetName = targetName.Substring(0, typeParamStart);
-            }
-            _s += $"public {targetName}{typeParameters}({parameters})";
+            _s += $"public {targetName}({parameters})";
         }
         else
         {
