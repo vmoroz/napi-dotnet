@@ -156,7 +156,8 @@ public class StructCodeGenerator
         if (constructorInterface != null)
         {
             ITypeSymbol targetType = constructorInterface.TypeArguments[1];
-            string targetName = targetType.Name;
+            string targetName = targetType.ToDisplayString();
+            targetName = targetName.Substring(targetName.LastIndexOf('.') + 1);
 
             _s++;
             _s += $"public partial struct {targetName}";
@@ -405,6 +406,11 @@ public class StructCodeGenerator
         if (methodName == "New")
         {
             // Generate C# constructor instead of a static method.
+            int typeParamStart = targetName.IndexOf('<');
+            if (typeParamStart > 0)
+            {
+                targetName = targetName.Substring(0, typeParamStart);
+            }
             _s += $"public {targetName}{typeParameters}({parameters})";
         }
         else

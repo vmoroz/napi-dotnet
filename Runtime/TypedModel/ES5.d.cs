@@ -359,7 +359,7 @@ public partial interface IError<TSelf> : ITypedValue<TSelf>
     @string? stack { get; set; }
 }
 
-public partial interface IErrorConstructor<TSelf, TError> : ITypedValue<TSelf>
+public partial interface IErrorConstructor<TSelf, TError> : ITypedConstructor<TSelf, TError>
     where TSelf : struct, IErrorConstructor<TSelf, TError>
     where TError : struct, IError<TError>
 {
@@ -376,12 +376,19 @@ public partial struct SyntaxError : IError<SyntaxError> { }
 public partial struct TypeError : IError<TypeError> { }
 public partial struct URIError : IError<URIError> { }
 
+[GenerateInstanceInGlobalCache(nameof(Error))]
 public partial struct ErrorConstructor : IErrorConstructor<ErrorConstructor, Error> { }
+[GenerateInstanceInGlobalCache(nameof(EvalError))]
 public partial struct EvalErrorConstructor : IErrorConstructor<EvalErrorConstructor, EvalError> { }
+[GenerateInstanceInGlobalCache(nameof(RangeError))]
 public partial struct RangeErrorConstructor : IErrorConstructor<RangeErrorConstructor, RangeError> { }
+[GenerateInstanceInGlobalCache(nameof(ReferenceError))]
 public partial struct ReferenceErrorConstructor : IErrorConstructor<ReferenceErrorConstructor, ReferenceError> { }
+[GenerateInstanceInGlobalCache(nameof(SyntaxError))]
 public partial struct SyntaxErrorConstructor : IErrorConstructor<SyntaxErrorConstructor, SyntaxError> { }
+[GenerateInstanceInGlobalCache(nameof(TypeError))]
 public partial struct TypeErrorConstructor : IErrorConstructor<TypeErrorConstructor, TypeError> { }
+[GenerateInstanceInGlobalCache(nameof(URIError))]
 public partial struct URIErrorConstructor : IErrorConstructor<URIErrorConstructor, URIError> { }
 
 public partial interface IJSON : ITypedValue<JSON>
@@ -494,6 +501,19 @@ public partial interface IArray<TSelf, T> : ITypedValue<TSelf>
     T this[@number index] { get; set; }
 }
 
+public partial interface IArrayStatics<T> : ITypedConstructor<ArrayStatics<T>, Array<T>>
+    where T : struct, ITypedValue<T>
+{
+    Array<T> New(@number arrayLength);
+    Array<T> New(params T[] items);
+    Array<@any> Invoke(@number? arrayLength = null);
+    Array<T> Invoke(@number arrayLength);
+    Array<T> Invoke(params T[] items);
+    //TODO: What does it mean that he result must be "arg is any[]"
+    @boolean isArray(@any arg);
+    Array<@any> prototype { get; }
+}
+
 public partial interface IArrayConstructor : ITypedValue<ArrayConstructor>
 {
     Array<@any> New(@number? arrayLength = null);
@@ -507,12 +527,24 @@ public partial interface IArrayConstructor : ITypedValue<ArrayConstructor>
     Array<@any> prototype { get; }
 }
 
+//TODO: It seems that ITypedConstructor interface does not work for Array<T>. We need a better approach
 public partial struct Array<T> : IArray<Array<T>, T>
     where T : struct, ITypedValue<T>
 {
 }
 
-//TODO: It seems that ITypedConstructor interface does not work for Array<T>. We need a better approach
+public partial struct ArrayStatics<T> : IArrayStatics<T>
+    where T : struct, ITypedValue<T>
+{
+    public static ArrayStatics<T> Instance => (ArrayStatics<T>)(JSValue)GlobalCache.Array;
+}
+
+public partial class GlobalCache
+{
+    public static ArrayConstructor Array => (ArrayConstructor)GetValue(CacheId.Array);
+    private partial class CacheId { public static readonly CacheId Array = new(nameof(Array)); }
+}
+
 public partial struct ArrayConstructor : IArrayConstructor { }
 
 public partial interface ITypedPropertyDescriptor<T> : ITypedValue<TypedPropertyDescriptor<T>>
