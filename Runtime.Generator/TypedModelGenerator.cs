@@ -300,6 +300,11 @@ public class StructCodeGenerator
         }
 
         string methodName = methodSymbol.Name;
+        //TODO: Use a list of keywords
+        if (methodName == "catch")
+        {
+            methodName = "@" + methodName;
+        }
         _nameTable.Add(methodName);
 
         string returnType = ToDisplayString(methodSymbol.ReturnType);

@@ -132,4 +132,46 @@ public partial struct OneOf<T1, T2> : ITypedValue<OneOf<T1, T2>> { }
 
 public partial struct OneOf<T1, T2, T3> : ITypedValue<OneOf<T1, T2, T3>> { }
 
+public partial struct OneOf<T1, T2, T3, T4> : ITypedValue<OneOf<T1, T2, T3, T4>> { }
+
 public partial struct Intersect<T1, T2> : ITypedValue<Intersect<T1, T2>> { }
+
+public partial struct Function<TResult> : IFunction<Function<TResult>>
+    where TResult : struct, ITypedValue<TResult>
+{
+}
+
+public partial struct Function<TArg0, TResult>
+    : IFunction<Function<TArg0, TResult>>
+    where TArg0 : struct, ITypedValue<TArg0>
+    where TResult : struct, ITypedValue<TResult>
+{
+}
+
+
+public partial struct Function<TArg0, TArg1, TResult>
+    : IFunction<Function<TArg0, TArg1, TResult>>
+    where TArg0 : struct, ITypedValue<TArg0>
+    where TArg1 : struct, ITypedValue<TArg1>
+    where TResult : struct, ITypedValue<TResult>
+{
+}
+
+public partial struct Function<TArg0, TArg1, TArg2, TResult>
+    : IFunction<Function<TArg0, TArg1, TArg2, TResult>>
+    where TArg0 : struct, ITypedValue<TArg0>
+    where TArg1 : struct, ITypedValue<TArg1>
+    where TArg2 : struct, ITypedValue<TArg2>
+    where TResult : struct, ITypedValue<TResult>
+{
+}
+
+public partial struct Function<TArg0, TArg1, TArg2, TArg3, TResult>
+    : IFunction<Function<TArg0, TArg1, TArg2, TArg3, TResult>>
+    where TArg0 : struct, ITypedValue<TArg0>
+    where TArg1 : struct, ITypedValue<TArg1>
+    where TArg2 : struct, ITypedValue<TArg2>
+    where TArg3 : struct, ITypedValue<TArg3>
+    where TResult : struct, ITypedValue<TResult>
+{
+}

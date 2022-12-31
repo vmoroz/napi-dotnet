@@ -1,6 +1,9 @@
 // ECMAScript APIs as they defined in
 // https://github.com/microsoft/TypeScript/blob/main/src/lib/es5.d.ts
 
+using System;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+
 namespace NodeApi.TypedModel;
 
 public partial interface IGlobal : ITypedValue<Global>
@@ -18,6 +21,7 @@ public partial interface IGlobal : ITypedValue<Global>
     @string encodeURIComponent(OneOf<@string, @number, @boolean> value);
 
     ObjectConstructor Object { get; set; }
+    FunctionConstructor Function { get; set; }
     StringConstructor String { get; set; }
     BooleanConstructor Boolean { get; set; }
     NumberConstructor Number { get; set; }
@@ -126,6 +130,114 @@ public partial struct Object : IObject { }
 [GenerateInstanceInGlobalCache(nameof(Object))]
 public partial struct ObjectConstructor : IObjectConstructor { }
 
+public partial interface IFunction<TSelf> : ITypedValue<TSelf>
+    where TSelf : struct, IFunction<TSelf>
+{
+    //TODO: what the "this: Function" as the first parameter means?
+    @any apply(@any thisArg, @any? argArray);
+    @any call(@any thisArg, params any[] argArray);
+    @any bind(@any thisArg, params any[] argArray);
+    @string toString();
+    @any prototype { get; set; }
+    @number length { get; }
+}
+
+public partial interface IFunctionConstructor : ITypedConstructor<FunctionConstructor, Function>
+{
+    Function New(params @string[] args);
+    Function Invoke(params @string[] args);
+    //TODO: do not generate for static.
+    //Function prototype { get; }
+}
+
+public partial struct Function : IFunction<Function> { }
+
+[GenerateInstanceInGlobalCache(nameof(Function))]
+public partial struct FunctionConstructor : IFunctionConstructor { }
+
+
+// TODO: How can we define it?
+// Extracts the type of the 'this' parameter of a function type, or 'unknown' if the function type has no 'this' parameter.
+// type ThisParameterType<T> = T extends (this: infer U, ...args: never) => any ? U : unknown;
+// Removes the 'this' parameter from a function type.
+// type OmitThisParameter<T> = unknown extends ThisParameterType<T>? T : T extends (...args: infer A) => infer R? (...args: A) => R : T;
+
+public partial interface ICallableFunction : IFunction<CallableFunction>
+{
+    // Difference between the call() and apply() methods: The only difference is call() method takes the arguments
+    // separated by a comma while apply() method takes the array of arguments.
+
+    ///**
+    // * Calls the function with the specified object as the this value and the elements of specified array as the arguments.
+    // * @param thisArg The object to be used as the this object.
+    // * @param args An array of argument values to be passed to the function.
+    // */
+    //apply<T, R>(this: (this: T) => R, thisArg: T): R;
+    //apply<T, A extends any [], R>(this: (this: T, ...args: A) => R, thisArg: T, args: A): R;
+
+    ///**
+    // * Calls the function with the specified object as the this value and the specified rest arguments as the arguments.
+    // * @param thisArg The object to be used as the this object.
+    // * @param args Argument values to be passed to the function.
+    // */
+    //call<T, A extends any [], R>(this: (this: T, ...args: A) => R, thisArg: T, ...args: A): R;
+
+    ///**
+    // * For a given function, creates a bound function that has the same body as the original function.
+    // * The this object of the bound function is associated with the specified object, and has the specified initial parameters.
+    // * @param thisArg The object to be used as the this object.
+    // * @param args Arguments to bind to the parameters of the function.
+    // */
+    //bind<T>(this: T, thisArg: ThisParameterType<T>): OmitThisParameter<T>;
+    //bind<T, A0, A extends any [], R>(this: (this: T, arg0: A0, ...args: A) => R, thisArg: T, arg0: A0): (...args: A) => R;
+    //bind<T, A0, A1, A extends any [], R>(this: (this: T, arg0: A0, arg1: A1, ...args: A) => R, thisArg: T, arg0: A0, arg1: A1): (...args: A) => R;
+    //bind<T, A0, A1, A2, A extends any [], R>(this: (this: T, arg0: A0, arg1: A1, arg2: A2, ...args: A) => R, thisArg: T, arg0: A0, arg1: A1, arg2: A2): (...args: A) => R;
+    //bind<T, A0, A1, A2, A3, A extends any [], R>(this: (this: T, arg0: A0, arg1: A1, arg2: A2, arg3: A3, ...args: A) => R, thisArg: T, arg0: A0, arg1: A1, arg2: A2, arg3: A3): (...args: A) => R;
+    //bind<T, AX, R>(this: (this: T, ...args: AX []) => R, thisArg: T, ...args: AX []): (...args: AX []) => R;
+}
+
+public partial struct CallableFunction : ICallableFunction { }
+
+public partial interface INewableFunction : IFunction<NewableFunction>
+{
+    ///**
+    // * Calls the function with the specified object as the this value and the elements of specified array as the arguments.
+    // * @param thisArg The object to be used as the this object.
+    // * @param args An array of argument values to be passed to the function.
+    // */
+    //apply<T>(this: new () => T, thisArg: T): void;
+    //apply<T, A extends any[]>(this: new (...args: A) => T, thisArg: T, args: A): void;
+
+    ///**
+    // * Calls the function with the specified object as the this value and the specified rest arguments as the arguments.
+    // * @param thisArg The object to be used as the this object.
+    // * @param args Argument values to be passed to the function.
+    // */
+    //call<T, A extends any[]>(this: new (...args: A) => T, thisArg: T, ...args: A): void;
+
+    ///**
+    // * For a given function, creates a bound function that has the same body as the original function.
+    // * The this object of the bound function is associated with the specified object, and has the specified initial parameters.
+    // * @param thisArg The object to be used as the this object.
+    // * @param args Arguments to bind to the parameters of the function.
+    // */
+    //bind<T>(this: T, thisArg: any): T;
+    //bind<A0, A extends any[], R>(this: new (arg0: A0, ...args: A) => R, thisArg: any, arg0: A0): new (...args: A) => R;
+    //bind<A0, A1, A extends any[], R>(this: new (arg0: A0, arg1: A1, ...args: A) => R, thisArg: any, arg0: A0, arg1: A1): new (...args: A) => R;
+    //bind<A0, A1, A2, A extends any[], R>(this: new (arg0: A0, arg1: A1, arg2: A2, ...args: A) => R, thisArg: any, arg0: A0, arg1: A1, arg2: A2): new (...args: A) => R;
+    //bind<A0, A1, A2, A3, A extends any[], R>(this: new (arg0: A0, arg1: A1, arg2: A2, arg3: A3, ...args: A) => R, thisArg: any, arg0: A0, arg1: A1, arg2: A2, arg3: A3): new (...args: A) => R;
+    //bind<AX, R>(this: new (...args: AX[]) => R, thisArg: any, ...args: AX[]): new (...args: AX[]) => R;
+}
+
+public partial struct NewableFunction : INewableFunction { }
+
+//TODO: do we need it?
+//interface IArguments {
+//    [index: number]: any;
+//    length: number;
+//    callee: Function;
+//}
+
 public partial interface IString : ITypedValue<String>
 {
     @string toString();
@@ -208,7 +320,31 @@ public partial struct Number : INumber { }
 [GenerateInstanceInGlobalCache(nameof(Number))]
 public partial struct NumberConstructor : INumberConstructor { }
 
-//TODO: Add import types and template strings array
+public partial interface ITemplateStringsArray : IReadonlyArray<TemplateStringsArray, @string>
+{
+    ReadonlyArray<@string> raw { get; }
+}
+
+public partial struct TemplateStringsArray : ITemplateStringsArray { }
+
+public partial interface IImportMeta : ITypedValue<ImportMeta> { }
+
+public partial struct ImportMeta : IImportMeta { }
+
+public partial interface IImportCallOptions : ITypedValue<ImportCallOptions>
+{
+    ImportAssertions? assert { get; set; }
+}
+
+public partial struct ImportCallOptions : IImportCallOptions { }
+
+public partial interface IImportAssertions : ITypedValue<ImportAssertions>
+{
+    @string this[@string index] { get; set; }
+}
+
+public partial struct ImportAssertions : IImportAssertions { }
+
 
 public partial interface IMath : ITypedConstructor<MathStatics, Math>
 {
@@ -400,7 +536,8 @@ public partial interface IJSON : ITypedValue<JSON>
 
 public partial struct JSON : IJSON { }
 
-public partial interface IReadonlyArray<T> : ITypedValue<ReadonlyArray<T>>
+public partial interface IReadonlyArray<TSelf, T> : ITypedValue<TSelf>
+    where TSelf : struct, IReadonlyArray<TSelf, T>
     where T : struct, ITypedValue<T>
 {
     @number length { get; }
@@ -439,7 +576,7 @@ public partial interface IReadonlyArray<T> : ITypedValue<ReadonlyArray<T>>
     T this[@number index] { get; }
 }
 
-public partial struct ReadonlyArray<T> : IReadonlyArray<T>
+public partial struct ReadonlyArray<T> : IReadonlyArray<ReadonlyArray<T>, T>
     where T : struct, ITypedValue<T>
 {
 }
@@ -563,7 +700,67 @@ public partial struct TypedPropertyDescriptor<T> : ITypedPropertyDescriptor<T>
 {
 }
 
+//TODO: Do we need it?
+//declare type ClassDecorator = <TFunction extends Function>(target: TFunction) => TFunction | void;
+//declare type PropertyDecorator = (target: Object, propertyKey: string | symbol) => void;
+//declare type MethodDecorator = <T>(target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>) => TypedPropertyDescriptor<T> | void;
+//declare type ParameterDecorator = (target: Object, propertyKey: string | symbol, parameterIndex: number) => void;
+
 //TODO: Add Promise
+//declare type PromiseConstructorLike = new <T>(executor: (resolve: (value: T | PromiseLike<T>) => void, reject: (reason?: any) => void) => void) => PromiseLike<T>;
+
+public partial interface IPromiseLike<T> : ITypedValue<PromiseLike<T>>
+    where T : struct, ITypedValue<T>
+{
+    //    /**
+    //     * Attaches callbacks for the resolution and/or rejection of the Promise.
+    //     * @param onfulfilled The callback to execute when the Promise is resolved.
+    //     * @param onrejected The callback to execute when the Promise is rejected.
+    //     * @returns A Promise for the completion of which ever callback is executed.
+    //     */
+    PromiseLike<OneOf<TResult1, TResult2>> then<TResult1 /*= T*/, TResult2 /*= never*/>(
+        OneOf<Function<T/*value*/, TResult1>, PromiseLike<TResult1>, @undefined, @null>? onfulfilled = null,
+        OneOf<Function<T/*value*/, TResult2>, PromiseLike<TResult2>, @undefined, @null>? onrejected = null)
+        where TResult1 : struct, ITypedValue<TResult1>
+        where TResult2 : struct, ITypedValue<TResult2>;
+}
+
+public partial struct PromiseLike<T> : IPromiseLike<T>
+    where T : struct, ITypedValue<T>
+{
+}
+
+// Represents the completion of an asynchronous operation
+public partial interface IPromise<T> : ITypedValue<Promise<T>>
+    where T : struct, ITypedValue<T>
+{
+    Promise<OneOf<TResult1, TResult2>> then<TResult1 /*= T*/, TResult2 /*= never*/>(
+        OneOf<Func<T /*value*/, TResult1>, PromiseLike<TResult1>, @undefined, @null>? onfulfilled = null,
+        OneOf<Func<T /*value*/, TResult2>, PromiseLike<TResult2>, @undefined, @null>? onrejected = null)
+        where TResult1 : struct, ITypedValue<TResult1>
+        where TResult2 : struct, ITypedValue<TResult2>;
+
+    Promise<OneOf<T, TResult>> @catch<TResult /*= never*/>(
+        OneOf<Func<@any /*reason*/, TResult>, PromiseLike<TResult>, @undefined, @null>? onrejected = null)
+        where TResult : struct, ITypedValue<TResult>;
+}
+
+public partial struct Promise<T> : IPromise<T>
+    where T : struct, ITypedValue<T>
+{
+}
+
+///**
+// * Recursively unwraps the "awaited type" of a type. Non-promise "thenables" should resolve to `never`. This emulates the behavior of `await`.
+// */
+//type Awaited<T> =
+//    T extends null | undefined ? T : // special case for `null | undefined` when not in `--strictNullChecks` mode
+//        T extends object & { then(onfulfilled: infer F, ...args: infer _): any } ? // `await` only unwraps object types with a callable `then`. Non-object types are not unwrapped
+//            F extends ((value: infer V, ...args: infer _) => any) ? // if the argument to `then` is callable, extracts the first argument
+//                Awaited<V> : // recursively unwrap the value
+//                never : // the argument to `then` was not callable
+//        T; // non-object or non-thenable
+
 
 public partial interface IArrayLike<T> : ITypedValue<ArrayLike<T>>
     where T : struct, ITypedValue<T>
@@ -649,7 +846,7 @@ public partial interface IDataViewConstructor : ITypedConstructor<DataViewConstr
 public partial struct DataView : IDataView { }
 
 [GenerateInstanceInGlobalCache(nameof(DataView))]
-public partial struct DataViewConstructor : IDataViewConstructor {}
+public partial struct DataViewConstructor : IDataViewConstructor { }
 
 public partial interface ITypedArray<TSelf> : ITypedValue<TSelf>
     where TSelf : struct, ITypedArray<TSelf>
@@ -734,54 +931,5 @@ public partial struct Uint32ArrayConstructor : ITypedArrayConstructor<Uint32Arra
 public partial struct Float32ArrayConstructor : ITypedArrayConstructor<Float32ArrayConstructor, Float32Array> { }
 [GenerateInstanceInGlobalCache(nameof(Float64Array))]
 public partial struct Float64ArrayConstructor : ITypedArrayConstructor<Float64ArrayConstructor, Float64Array> { }
-
-public interface IFunction<TSelf> : ITypedValue<TSelf>
-    where TSelf : struct, IFunction<TSelf>
-{
-}
-
-public partial struct Function : IFunction<Function>
-{
-}
-
-public partial struct Function<TResult> : IFunction<Function<TResult>>
-    where TResult : struct, ITypedValue<TResult>
-{
-}
-
-public partial struct Function<TArg0, TResult>
-    : IFunction<Function<TArg0, TResult>>
-    where TArg0 : struct, ITypedValue<TArg0>
-    where TResult : struct, ITypedValue<TResult>
-{
-}
-
-
-public partial struct Function<TArg0, TArg1, TResult>
-    : IFunction<Function<TArg0, TArg1, TResult>>
-    where TArg0 : struct, ITypedValue<TArg0>
-    where TArg1 : struct, ITypedValue<TArg1>
-    where TResult : struct, ITypedValue<TResult>
-{
-}
-
-public partial struct Function<TArg0, TArg1, TArg2, TResult>
-    : IFunction<Function<TArg0, TArg1, TArg2, TResult>>
-    where TArg0 : struct, ITypedValue<TArg0>
-    where TArg1 : struct, ITypedValue<TArg1>
-    where TArg2 : struct, ITypedValue<TArg2>
-    where TResult : struct, ITypedValue<TResult>
-{
-}
-
-public partial struct Function<TArg0, TArg1, TArg2, TArg3, TResult>
-    : IFunction<Function<TArg0, TArg1, TArg2, TArg3, TResult>>
-    where TArg0 : struct, ITypedValue<TArg0>
-    where TArg1 : struct, ITypedValue<TArg1>
-    where TArg2 : struct, ITypedValue<TArg2>
-    where TArg3 : struct, ITypedValue<TArg3>
-    where TResult : struct, ITypedValue<TResult>
-{
-}
 
 public partial struct ThisType<T> : ITypedValue<ThisType<T>> { }
