@@ -16,18 +16,6 @@ sealed class TypedValueAttribute : Attribute
 }
 
 [AttributeUsage(AttributeTargets.Struct, Inherited = false)]
-sealed class TypedConstructorAttribute<T> : Attribute
-{
-    public Type ConstructorType { get; init; }
-
-    [SetsRequiredMembers]
-    public TypedConstructorAttribute()
-    {
-        ConstructorType = typeof(T);
-    }
-}
-
-[AttributeUsage(AttributeTargets.Struct, Inherited = false)]
 sealed class GenerateInstanceInGlobalCacheAttribute : Attribute
 {
     public string GlobalPropertyName { get; }
