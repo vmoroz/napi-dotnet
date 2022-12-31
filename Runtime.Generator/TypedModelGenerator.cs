@@ -31,17 +31,6 @@ public class TypedModelGenerator : ISourceGenerator
 
         var nameTable = new HashSet<string>();
 
-        // Generate typed interfaces
-        foreach (INamedTypeSymbol interfaceSymbol in syntaxReceiver.TypedInterfaces)
-        {
-            var codeGenerator = new InterfaceCodeGenerator(interfaceSymbol, nameTable, context);
-            string source = codeGenerator.Execute();
-            if (!string.IsNullOrEmpty(codeGenerator.FileName))
-            {
-                context.AddSource($"{codeGenerator.FileName}.g.cs", SourceText.From(source, Encoding.UTF8));
-            }
-        }
-
         foreach (INamedTypeSymbol structSymbol in syntaxReceiver.Structs)
         {
             var codeGenerator = new StructCodeGenerator(structSymbol, nameTable, context);
@@ -62,24 +51,12 @@ public class TypedModelGenerator : ISourceGenerator
     // Created on demand before each generation pass
     class SyntaxReceiver : ISyntaxContextReceiver
     {
-        public List<INamedTypeSymbol> TypedInterfaces { get; } = new List<INamedTypeSymbol>();
         public List<INamedTypeSymbol> Structs { get; } = new List<INamedTypeSymbol>();
 
         // Called for every syntax node in the compilation, we can inspect the nodes and save any information useful for generation
         public void OnVisitSyntaxNode(GeneratorSyntaxContext context)
         {
-            if (context.Node is InterfaceDeclarationSyntax interfaceDeclarationSyntax
-                && interfaceDeclarationSyntax.AttributeLists.Count > 0)
-            {
-                INamedTypeSymbol interfaceSymbol = context.SemanticModel.GetDeclaredSymbol(interfaceDeclarationSyntax)
-                    ?? throw new Exception($"Semantic node not found for {interfaceDeclarationSyntax}");
-
-                if (interfaceSymbol.GetAttributes().Any(a => a.AttributeClass?.ToDisplayString() == "NodeApi.TypedModel.TypedInterfaceAttribute"))
-                {
-                    TypedInterfaces.Add(interfaceSymbol);
-                }
-            }
-            else if (context.Node is StructDeclarationSyntax structDeclarationSyntax)
+            if (context.Node is StructDeclarationSyntax structDeclarationSyntax)
             {
                 INamedTypeSymbol structSymbol = context.SemanticModel.GetDeclaredSymbol(structDeclarationSyntax)
                     ?? throw new Exception("semantic node not found");
@@ -128,15 +105,8 @@ public class StructCodeGenerator
         INamedTypeSymbol structSymbol,
         HashSet<string> nameTable,
         GeneratorExecutionContext context)
-        : this(nameTable, context)
     {
         _structSymbol = structSymbol;
-    }
-
-    public StructCodeGenerator(
-        HashSet<string> nameTable,
-        GeneratorExecutionContext context)
-    {
         _nameTable = nameTable;
         _context = context;
         _s = new SourceBuilder(indent: "    ");
@@ -465,83 +435,6 @@ public class StructCodeGenerator
             typeName = typeName.Insert(typeNameStart, "@");
         }
         return typeName;
-    }
-}
-
-public class InterfaceCodeGenerator : StructCodeGenerator
-{
-    private readonly INamedTypeSymbol _interfaceSymbol;
-
-    public string FileName { get; private set; } = "";
-
-    public InterfaceCodeGenerator(
-        INamedTypeSymbol interfaceSymbol,
-        HashSet<string> nameTable,
-        GeneratorExecutionContext context)
-        : base(nameTable, context)
-    {
-        _interfaceSymbol = interfaceSymbol;
-    }
-
-    public override string Execute()
-    {
-        if (!_interfaceSymbol.ContainingSymbol.Equals(_interfaceSymbol.ContainingNamespace, SymbolEqualityComparer.Default))
-        {
-            throw new Exception($"Interface must be in a namespace: {_interfaceSymbol.Name}");
-        }
-
-        INamedTypeSymbol interfaceAttributeSymbol = _context.Compilation.GetTypeByMetadataName("NodeApi.TypedModel.TypedInterfaceAttribute")
-            ?? throw new Exception("Symbol not found for TypedInterfaceAttribute");
-
-        // Get the name of the struct to be generated.
-        AttributeData attributeData = _interfaceSymbol.GetAttributes().Single(
-            a => a.AttributeClass?.Equals(interfaceAttributeSymbol, SymbolEqualityComparer.Default) ?? false);
-        TypedConstant overridenNameOpt = attributeData.NamedArguments.SingleOrDefault(kvp => kvp.Key == "Name").Value;
-        string structName = ChooseName(_interfaceSymbol.Name, overridenNameOpt);
-
-        string namespaceName = _interfaceSymbol.ContainingNamespace.ToDisplayString();
-        string fileName = structName;
-        string structBaseType = _interfaceSymbol.Name;
-        if (_interfaceSymbol.IsGenericType)
-        {
-            if (_interfaceSymbol.TypeParameters.Length != 1)
-            {
-                throw new Exception($"We do not support more than one generic type parameter: {_interfaceSymbol.Name}.");
-            }
-            if (_interfaceSymbol.TypeParameters[0].Name != "TSelf")
-            {
-                throw new Exception($"Generic type parameter name must be TSelf: {_interfaceSymbol.Name}.");
-            }
-            structBaseType += "<" + structName + ">";
-        }
-
-        _s += $"namespace {namespaceName};";
-        _s++;
-        _s += $"public partial struct {structName}";
-        _s += "{";
-        _s += "private JSValue _value;";
-        _s++;
-        _s += $"public static explicit operator {structName}(JSValue value) => new {structName} {{ _value = value }};";
-        _s += $"public static implicit operator JSValue({structName} value) => value._value;";
-        _s += $"public static implicit operator JSValue({structName}? value) => value is {structName} notNullValue ? notNullValue._value : JSValue.Undefined;";
-        _s++;
-
-        GenerateInterfaceMembers(_interfaceSymbol);
-
-        _s += "}";
-
-        FileName = fileName;
-        return _s.ToString();
-    }
-
-    private string ChooseName(string interfaceName, TypedConstant overridenNameOpt)
-    {
-        if (!overridenNameOpt.IsNull && overridenNameOpt.Value is object value)
-        {
-            return value.ToString();
-        }
-
-        return interfaceName.TrimStart('I');
     }
 }
 

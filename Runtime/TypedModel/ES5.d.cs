@@ -3,8 +3,7 @@
 
 namespace NodeApi.TypedModel;
 
-[TypedInterface]
-public partial interface IGlobal
+public partial interface IGlobal : ITypedValue<Global>
 {
     @number NaN { get; set; }
     @number Infinity { get; set; }
@@ -17,18 +16,47 @@ public partial interface IGlobal
     @string decodeURIComponent(@string value);
     @string encodeURI(@string value);
     @string encodeURIComponent(OneOf<@string, @number, @boolean> value);
+
+    ObjectConstructor Object { get; set; }
+    StringConstructor String { get; set; }
+    BooleanConstructor Boolean { get; set; }
+    NumberConstructor Number { get; set; }
+    MathStatics Math { get; set; }
+    DateConstructor Date { get; set; }
+    RegExpConstructor RegExp { get; set; }
+    ErrorConstructor Error { get; set; }
+    EvalErrorConstructor EvalError { get; set; }
+    RangeErrorConstructor RangeError { get; set; }
+    ReferenceErrorConstructor ReferenceError { get; set; }
+    SyntaxErrorConstructor SyntaxError { get; set; }
+    TypeErrorConstructor TypeError { get; set; }
+    URIErrorConstructor URIError { get; set; }
+    JSON JSON { get; set; }
+    ArrayConstructor Array { get; set; }
+    ArrayBufferConstructor ArrayBuffer { get; set; }
+    DataViewConstructor DataView { get; set; }
+    Int8ArrayConstructor Int8Array { get; set; }
+    Uint8ArrayConstructor Uint8Array { get; set; }
+    Uint8ClampedArrayConstructor Uint8ClampedArray { get; set; }
+    Int16ArrayConstructor Int16Array { get; set; }
+    Uint16ArrayConstructor Uint16Array { get; set; }
+    Int32ArrayConstructor Int32Array { get; set; }
+    Uint32ArrayConstructor Uint32Array { get; set; }
+    Float32ArrayConstructor Float32Array { get; set; }
+    Float64ArrayConstructor Float64Array { get; set; }
 }
 
-public partial interface ISymbol<TSelf> : ITypedValue<TSelf>
-    where TSelf : struct, ISymbol<TSelf>
+public partial struct Global : IGlobal { }
+
+public partial interface ISymbol : ITypedValue<Symbol>
 {
     @string toString();
     @symbol valueOf();
 }
 
-public partial struct Symbol : ISymbol<Symbol> { }
+public partial struct Symbol : ISymbol { }
 
-//TODO: There must be a better way to declare type
+//TODO: There must be a better way to declare this type
 // declare type PropertyKey = string | number | symbol;
 public partial struct PropertyKey : ITypedValue<PropertyKey>
 {
@@ -41,8 +69,7 @@ public partial struct PropertyKey : ITypedValue<PropertyKey>
     public static explicit operator Symbol(PropertyKey value) => (Symbol)value._value;
 }
 
-[TypedInterface]
-public partial interface IPropertyDescriptor
+public partial interface IPropertyDescriptor : ITypedValue<PropertyDescriptor>
 {
     @boolean? configurable { get; set; }
     @boolean? enumerable { get; set; }
@@ -52,14 +79,16 @@ public partial interface IPropertyDescriptor
     Function<@any, @void>? set { get; set; }
 }
 
-[TypedInterface]
-public partial interface IPropertyDescriptorMap
+public partial struct PropertyDescriptor : IPropertyDescriptor { }
+
+public partial interface IPropertyDescriptorMap : ITypedValue<PropertyDescriptorMap>
 {
     PropertyDescriptor this[PropertyKey key] { get; set; }
 }
 
-public partial interface IObject<TSelf> : ITypedValue<TSelf>
-    where TSelf : struct, IObject<TSelf>
+public partial struct PropertyDescriptorMap : IPropertyDescriptorMap { }
+
+public partial interface IObject : ITypedValue<Object>
 {
     Function constructor { get; set; }
     @string toString();
@@ -92,18 +121,12 @@ public partial interface IObjectConstructor : ITypedConstructor<ObjectConstructo
     Array<@string> keys(@object obj);
 }
 
-public partial struct Object : IObject<Object> { }
+public partial struct Object : IObject { }
 
 [GenerateInstanceInGlobalCache(nameof(Object))]
 public partial struct ObjectConstructor : IObjectConstructor { }
 
-public partial interface IGlobal
-{
-    ObjectConstructor Object { get; set; }
-}
-
-public partial interface IString<TSelf> : ITypedValue<TSelf>
-    where TSelf : struct, IString<TSelf>
+public partial interface IString : ITypedValue<String>
 {
     @string toString();
     @string charAt(@number index);
@@ -137,18 +160,12 @@ public partial interface IStringConstructor : ITypedConstructor<StringConstructo
     @string fromCharCode(params @number[] codes);
 }
 
-public partial struct String : IString<String> { }
+public partial struct String : IString { }
 
 [GenerateInstanceInGlobalCache(nameof(String))]
 public partial struct StringConstructor : IStringConstructor { }
 
-public partial interface IGlobal
-{
-    StringConstructor String { get; set; }
-}
-
-public partial interface IBoolean<TSelf> : ITypedValue<TSelf>
-    where TSelf : struct, IBoolean<TSelf>
+public partial interface IBoolean : ITypedValue<Boolean>
 {
     @boolean valueOf();
 }
@@ -160,18 +177,12 @@ public partial interface IBooleanConstructor : ITypedConstructor<BooleanConstruc
     Boolean prototype { get; }
 }
 
-public partial struct Boolean : IBoolean<Boolean> { }
+public partial struct Boolean : IBoolean { }
 
 [GenerateInstanceInGlobalCache(nameof(Boolean))]
 public partial struct BooleanConstructor : IBooleanConstructor { }
 
-public partial interface IGlobal
-{
-    BooleanConstructor Boolean { get; set; }
-}
-
-public partial interface INumber<TSelf> : ITypedValue<TSelf>
-    where TSelf : struct, INumber<TSelf>
+public partial interface INumber : ITypedValue<Number>
 {
     @string toString(@number? radix = null);
     @string toFixed(@number? fractionDigits = null);
@@ -192,20 +203,14 @@ public partial interface INumberConstructor : ITypedConstructor<NumberConstructo
     @number POSITIVE_INFINITY { get; }
 }
 
-public partial struct Number : INumber<Number> { }
+public partial struct Number : INumber { }
 
 [GenerateInstanceInGlobalCache(nameof(Number))]
 public partial struct NumberConstructor : INumberConstructor { }
 
-public partial interface IGlobal
-{
-    NumberConstructor Number { get; set; }
-}
-
 //TODO: Add import types and template strings array
 
-[TypedInterface]
-public partial interface IMath
+public partial interface IMath : ITypedConstructor<MathStatics, Math>
 {
     @number E { get; }
     @number LN10 { get; }
@@ -235,15 +240,12 @@ public partial interface IMath
     @number tan(@number x);
 }
 
-public partial struct Math { }
+public partial struct Math : ITypedValue<Math> { }
 
-public partial interface IGlobal
-{
-    Math Math { get; set; }
-}
+[GenerateInstanceInGlobalCache(nameof(Math))]
+public partial struct MathStatics : IMath { }
 
-[TypedInterface]
-public partial interface IDate
+public partial interface IDate : ITypedValue<Date>
 {
     @string toString();
     @string toDateString();
@@ -290,8 +292,7 @@ public partial interface IDate
     @string toJSON(@any? key = null);
 }
 
-[TypedInterface]
-public partial interface IDateConstructor
+public partial interface IDateConstructor : ITypedConstructor<DateConstructor, Date>
 {
     Date New();
     Date New(@number value);
@@ -304,35 +305,28 @@ public partial interface IDateConstructor
     @number now();
 }
 
-public partial interface IGlobal
-{
-    DateConstructor Date { get; set; }
-}
+public partial struct Date : IDate { }
 
-public partial interface IRegExpMatchArray<TSelf> : IArray<TSelf, @string>
-    where TSelf : struct, IRegExpMatchArray<TSelf>
-{
-    @number? index { get; set; }
-    @string? input { get; set; }
-}
+[GenerateInstanceInGlobalCache(nameof(Date))]
+public partial struct DateConstructor : IDateConstructor { }
 
-public partial struct RegExpMatchArray : IRegExpMatchArray<RegExpMatchArray>
-{
-}
-
-public partial interface IRegExpExecArray<TSelf> : IArray<TSelf, @string>
-    where TSelf : struct, IRegExpExecArray<TSelf>
+public partial interface IRegExpMatchArray : IArray<RegExpMatchArray, @string>
 {
     @number? index { get; set; }
     @string? input { get; set; }
 }
 
-public partial struct RegExpExecArray : IRegExpExecArray<RegExpExecArray>
+public partial struct RegExpMatchArray : IRegExpMatchArray { }
+
+public partial interface IRegExpExecArray : IArray<RegExpExecArray, @string>
 {
+    @number? index { get; set; }
+    @string? input { get; set; }
 }
 
-[TypedInterface]
-public partial interface IRegExp
+public partial struct RegExpExecArray : IRegExpExecArray { }
+
+public partial interface IRegExp : IArray<RegExp, @string>
 {
     Nullable<RegExpExecArray> exec(@string value);
     @boolean test(@string value);
@@ -343,8 +337,7 @@ public partial interface IRegExp
     @number lastIndex { get; set; }
 }
 
-[TypedInterface]
-public partial interface IRegExpConstructor
+public partial interface IRegExpConstructor : ITypedConstructor<RegExpConstructor, RegExp>
 {
     RegExp New(OneOf<RegExp, @string> pattern);
     RegExp New(@string pattern, @string? flags = null);
@@ -353,10 +346,10 @@ public partial interface IRegExpConstructor
     RegExp prototype { get; }
 }
 
-public partial interface IGlobal
-{
-    RegExpConstructor RegExp { get; set; }
-}
+public partial struct RegExp : IRegExp { }
+
+[GenerateInstanceInGlobalCache(nameof(RegExp))]
+public partial struct RegExpConstructor : IRegExpConstructor { }
 
 public partial interface IError<TSelf> : ITypedValue<TSelf>
     where TSelf : struct, IError<TSelf>
@@ -391,36 +384,16 @@ public partial struct SyntaxErrorConstructor : IErrorConstructor<SyntaxErrorCons
 public partial struct TypeErrorConstructor : IErrorConstructor<TypeErrorConstructor, TypeError> { }
 public partial struct URIErrorConstructor : IErrorConstructor<URIErrorConstructor, URIError> { }
 
-public partial interface IGlobal
-{
-    ErrorConstructor Error { get; set; }
-    EvalErrorConstructor EvalError { get; set; }
-    RangeErrorConstructor RangeError { get; set; }
-    ReferenceErrorConstructor ReferenceError { get; set; }
-    SyntaxErrorConstructor SyntaxError { get; set; }
-    TypeErrorConstructor TypeError { get; set; }
-    URIErrorConstructor URIError { get; set; }
-}
-
-public partial interface IJSON<TSelf> : ITypedValue<TSelf>
-    where TSelf : struct, IJSON<TSelf>
+public partial interface IJSON : ITypedValue<JSON>
 {
     @any parse(@string text, Function<@any /*this*/, @string /*key*/, @any /*value*/, @any>? reviver = null);
     @string stringify(@any value, Function<@any /*this*/, @string /*key*/, @any /*value*/, @any>? replacer = null, OneOf<@string, @number>? space = null);
     @string stringify(@any value, Nullable<Array<OneOf<@number, @string>>>? replacer = null, OneOf<@string, @number>? space = null);
 }
 
-public partial struct JSON : IJSON<JSON>
-{
-}
+public partial struct JSON : IJSON { }
 
-public partial interface IGlobal
-{
-    JSON JSON { get; set; }
-}
-
-public partial interface IReadonlyArray<TSelf, T> : ITypedValue<TSelf>
-    where TSelf : struct, IReadonlyArray<TSelf, T>
+public partial interface IReadonlyArray<T> : ITypedValue<ReadonlyArray<T>>
     where T : struct, ITypedValue<T>
 {
     @number length { get; }
@@ -459,13 +432,12 @@ public partial interface IReadonlyArray<TSelf, T> : ITypedValue<TSelf>
     T this[@number index] { get; }
 }
 
-public partial struct ReadonlyArray<T> : IReadonlyArray<ReadonlyArray<T>, T>
+public partial struct ReadonlyArray<T> : IReadonlyArray<T>
     where T : struct, ITypedValue<T>
 {
 }
 
-public partial interface IConcatArray<TSelf, T> : ITypedValue<TSelf>
-    where TSelf : struct, IConcatArray<TSelf, T>
+public partial interface IConcatArray<T> : ITypedValue<ConcatArray<T>>
     where T : struct, ITypedValue<T>
 {
     @number length { get; }
@@ -474,7 +446,7 @@ public partial interface IConcatArray<TSelf, T> : ITypedValue<TSelf>
     Array<T> slice(@number? start = null, @number? end = null);
 }
 
-public partial struct ConcatArray<T> : IConcatArray<ConcatArray<T>, T>
+public partial struct ConcatArray<T> : IConcatArray<T>
     where T : struct, ITypedValue<T>
 {
 }
@@ -522,13 +494,7 @@ public partial interface IArray<TSelf, T> : ITypedValue<TSelf>
     T this[@number index] { get; set; }
 }
 
-public partial struct Array<T> : IArray<Array<T>, T>
-    where T : struct, ITypedValue<T>
-{
-}
-
-public partial interface IArrayConstructor<TSelf> : ITypedValue<TSelf>
-    where TSelf : struct, IArrayConstructor<TSelf>
+public partial interface IArrayConstructor : ITypedValue<ArrayConstructor>
 {
     Array<@any> New(@number? arrayLength = null);
     Array<T> New<T>(@number arrayLength) where T : struct, ITypedValue<T>;
@@ -541,17 +507,15 @@ public partial interface IArrayConstructor<TSelf> : ITypedValue<TSelf>
     Array<@any> prototype { get; }
 }
 
-public partial struct ArrayConstructor : IArrayConstructor<ArrayConstructor>
+public partial struct Array<T> : IArray<Array<T>, T>
+    where T : struct, ITypedValue<T>
 {
 }
 
-public partial interface IGlobal
-{
-    ArrayConstructor Array { get; set; }
-}
+//TODO: It seems that ITypedConstructor interface does not work for Array<T>. We need a better approach
+public partial struct ArrayConstructor : IArrayConstructor { }
 
-public partial interface ITypedPropertyDescriptor<TSelf, T> : ITypedValue<TSelf>
-    where TSelf : struct, ITypedPropertyDescriptor<TSelf, T>
+public partial interface ITypedPropertyDescriptor<T> : ITypedValue<TypedPropertyDescriptor<T>>
     where T : struct, ITypedValue<T>
 {
     @boolean? enumerable { get; set; }
@@ -562,48 +526,45 @@ public partial interface ITypedPropertyDescriptor<TSelf, T> : ITypedValue<TSelf>
     Function<T /*value*/, @void>? set { get; set; }
 }
 
+public partial struct TypedPropertyDescriptor<T> : ITypedPropertyDescriptor<T>
+    where T : struct, ITypedValue<T>
+{
+}
+
 //TODO: Add Promise
 
-public partial interface IArrayLike<TSelf, T> : ITypedValue<TSelf>
-    where TSelf : struct, IArrayLike<TSelf, T>
+public partial interface IArrayLike<T> : ITypedValue<ArrayLike<T>>
     where T : struct, ITypedValue<T>
 {
     @number length { get; }
     T this[@number index] { get; }
 }
 
-public partial struct ArrayLike<T> : IArrayLike<ArrayLike<T>, T>
+public partial struct ArrayLike<T> : IArrayLike<T>
     where T : struct, ITypedValue<T>
 {
 }
 
 //TODO: Add the utility types
 
-public partial interface IArrayBuffer<TSelf> : ITypedValue<TSelf>
-    where TSelf : struct, IArrayBuffer<TSelf>
+public partial interface IArrayBufferTypes : ITypedValue<ArrayBufferTypes>
+{
+    ArrayBuffer ArrayBuffer { get; set; }
+}
+
+public partial struct ArrayBufferTypes : IArrayBufferTypes { }
+
+//type ArrayBufferLike = ArrayBufferTypes[keyof ArrayBufferTypes];
+
+public partial interface IArrayBuffer : ITypedValue<ArrayBuffer>
 {
     @number byteLength { get; }
     ArrayBuffer Slice(@number begin, @number? end = null);
 }
 
-public partial struct ArrayBuffer : IArrayBuffer<ArrayBuffer>
-{
-}
+public partial struct ArrayBuffer : IArrayBuffer { }
 
-public partial interface IArrayBufferTypes<TSelf> : ITypedValue<TSelf>
-    where TSelf : struct, IArrayBufferTypes<TSelf>
-{
-    ArrayBuffer ArrayBuffer { get; set; }
-}
-
-public partial struct ArrayBufferTypes : IArrayBufferTypes<ArrayBufferTypes>
-{
-}
-
-//type ArrayBufferLike = ArrayBufferTypes[keyof ArrayBufferTypes];
-
-public partial interface IArrayBufferConstructor<TSelf> : ITypedValue<TSelf>
-    where TSelf : struct, IArrayBufferConstructor<TSelf>
+public partial interface IArrayBufferConstructor : ITypedConstructor<ArrayBufferConstructor, ArrayBuffer>
 {
     ArrayBuffer prototype { get; }
     ArrayBuffer New(@number byteLength);
@@ -611,17 +572,10 @@ public partial interface IArrayBufferConstructor<TSelf> : ITypedValue<TSelf>
     @boolean isView(@any arg);
 }
 
-public partial struct ArrayBufferConstructor : IArrayBufferConstructor<ArrayBufferConstructor>
-{
-}
+[GenerateInstanceInGlobalCache(nameof(ArrayBuffer))]
+public partial struct ArrayBufferConstructor : IArrayBufferConstructor { }
 
-public partial interface IGlobal
-{
-    ArrayBufferConstructor ArrayBuffer { get; set; }
-}
-
-public partial interface IArrayBufferView<TSelf> : ITypedValue<TSelf>
-    where TSelf : struct, IArrayBufferView<TSelf>
+public partial interface IArrayBufferView : ITypedValue<ArrayBufferView>
 {
     //TODO: ArrayBufferLike
     ArrayBuffer buffer { get; set; }
@@ -629,12 +583,9 @@ public partial interface IArrayBufferView<TSelf> : ITypedValue<TSelf>
     @number byteOffset { get; set; }
 }
 
-public partial struct ArrayBufferView : IArrayBufferView<ArrayBufferView>
-{
-}
+public partial struct ArrayBufferView : IArrayBufferView { }
 
-public partial interface IDataView<TSelf> : ITypedValue<TSelf>
-    where TSelf : struct, IDataView<TSelf>
+public partial interface IDataView : ITypedValue<DataView>
 {
     ArrayBuffer buffer { get; }
     @number byteLength { get; }
@@ -657,25 +608,16 @@ public partial interface IDataView<TSelf> : ITypedValue<TSelf>
     @void setUint32(@number byteOffset, @number value, @boolean? littleEndian = null);
 }
 
-public partial struct DataView : IDataView<DataView>
-{
-}
-
-public partial interface IDataViewConstructor<TSelf> : ITypedValue<TSelf>
-    where TSelf : struct, IDataViewConstructor<TSelf>
+public partial interface IDataViewConstructor : ITypedConstructor<DataViewConstructor, DataView>
 {
     DataView prototype { get; }
     DataView New(ArrayBuffer buffer, @number? byteOffset = null, @number? byteLength = null);
 }
 
-public partial struct DataViewConstructor : IDataViewConstructor<DataViewConstructor>
-{
-}
+public partial struct DataView : IDataView { }
 
-public partial interface IGlobal
-{
-    DataViewConstructor DataView { get; set; }
-}
+[GenerateInstanceInGlobalCache(nameof(DataView))]
+public partial struct DataViewConstructor : IDataViewConstructor {}
 
 public partial interface ITypedArray<TSelf> : ITypedValue<TSelf>
     where TSelf : struct, ITypedArray<TSelf>
@@ -716,7 +658,7 @@ public partial interface ITypedArray<TSelf> : ITypedValue<TSelf>
     @number this[@number index] { get; set; }
 }
 
-public partial interface ITypedArrayConstructor<TSelf, TTypedArray> : ITypedValue<TSelf>
+public partial interface ITypedArrayConstructor<TSelf, TTypedArray> : ITypedConstructor<TSelf, TTypedArray>
     where TSelf : struct, ITypedArrayConstructor<TSelf, TTypedArray>
     where TTypedArray : struct, ITypedArray<TTypedArray>
 {
@@ -724,7 +666,8 @@ public partial interface ITypedArrayConstructor<TSelf, TTypedArray> : ITypedValu
     TTypedArray New(@number length);
     TTypedArray New(OneOf<ArrayLike<@number>, ArrayBuffer> array);
     TTypedArray New(ArrayBuffer buffer, @number? byteOffset = null, @number? length = null);
-    @number BYTES_PER_ELEMENT { get; }
+    //TODO: Is it a duplication between constructor and object?
+    // @number BYTES_PER_ELEMENT { get; }
     TTypedArray of(params @number[] items);
     TTypedArray from(ArrayLike<@number> arrayLike);
     TTypedArray from<T>(ArrayLike<T> arrayLike, Function<T /*v*/, @number /*k*/, @number> mapfn, @any? thisArg = null)
@@ -741,27 +684,28 @@ public partial struct Uint32Array : ITypedArray<Uint32Array> { }
 public partial struct Float32Array : ITypedArray<Float32Array> { }
 public partial struct Float64Array : ITypedArray<Float64Array> { }
 
+[GenerateInstanceInGlobalCache(nameof(Int8Array))]
 public partial struct Int8ArrayConstructor : ITypedArrayConstructor<Int8ArrayConstructor, Int8Array> { }
-public partial struct Uint8ArrayConstructor : ITypedArrayConstructor<Uint8ArrayConstructor, Int8Array> { }
+[GenerateInstanceInGlobalCache(nameof(Uint8Array))]
+public partial struct Uint8ArrayConstructor : ITypedArrayConstructor<Uint8ArrayConstructor, Uint8Array> { }
+[GenerateInstanceInGlobalCache(nameof(Uint8ClampedArray))]
 public partial struct Uint8ClampedArrayConstructor : ITypedArrayConstructor<Uint8ClampedArrayConstructor, Uint8ClampedArray> { }
+[GenerateInstanceInGlobalCache(nameof(Int16Array))]
 public partial struct Int16ArrayConstructor : ITypedArrayConstructor<Int16ArrayConstructor, Int16Array> { }
-public partial struct Uint16ArrayConstructor : ITypedArrayConstructor<Uint16ArrayConstructor, Int16Array> { }
+[GenerateInstanceInGlobalCache(nameof(Uint16Array))]
+public partial struct Uint16ArrayConstructor : ITypedArrayConstructor<Uint16ArrayConstructor, Uint16Array> { }
+[GenerateInstanceInGlobalCache(nameof(Int32Array))]
 public partial struct Int32ArrayConstructor : ITypedArrayConstructor<Int32ArrayConstructor, Int32Array> { }
-public partial struct Uint32ArrayConstructor : ITypedArrayConstructor<Uint32ArrayConstructor, Int32Array> { }
+[GenerateInstanceInGlobalCache(nameof(Uint32Array))]
+public partial struct Uint32ArrayConstructor : ITypedArrayConstructor<Uint32ArrayConstructor, Uint32Array> { }
+[GenerateInstanceInGlobalCache(nameof(Float32Array))]
 public partial struct Float32ArrayConstructor : ITypedArrayConstructor<Float32ArrayConstructor, Float32Array> { }
+[GenerateInstanceInGlobalCache(nameof(Float64Array))]
 public partial struct Float64ArrayConstructor : ITypedArrayConstructor<Float64ArrayConstructor, Float64Array> { }
 
-public partial interface IGlobal
+public interface IFunction<TSelf> : ITypedValue<TSelf>
+    where TSelf : struct, IFunction<TSelf>
 {
-    Int8ArrayConstructor Int8Array { get; set; }
-    Uint8ArrayConstructor Uint8Array { get; set; }
-    Uint8ClampedArrayConstructor Uint8ClampedArray { get; set; }
-    Int16ArrayConstructor Int16Array { get; set; }
-    Uint16ArrayConstructor Uint16Array { get; set; }
-    Int32ArrayConstructor Int32Array { get; set; }
-    Uint32ArrayConstructor Uint32Array { get; set; }
-    Float32ArrayConstructor Float32Array { get; set; }
-    Float64ArrayConstructor Float64Array { get; set; }
 }
 
 public partial struct Function : IFunction<Function>
@@ -808,15 +752,4 @@ public partial struct Function<TArg0, TArg1, TArg2, TArg3, TResult>
 {
 }
 
-/**
- * Marker for contextual 'this' type
- */
-// interface ThisType<T> { }
-public partial struct ThisType<T> : ITypedValue<ThisType<T>>
-{
-}
-
-public interface IFunction<TSelf> : ITypedValue<TSelf>
-    where TSelf : struct, IFunction<TSelf>
-{
-}
+public partial struct ThisType<T> : ITypedValue<ThisType<T>> { }
