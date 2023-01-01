@@ -4,9 +4,9 @@
 
 It is an early draft that speaks about work in progress.
 Not everything what is described in this document is implemented yet.
-Everthing described in this document can be changed while we work on the implementation details.
+Everything described in this document can be changed while we work on the implementation details.
 
-## Overfview
+## Overview
 
 The C# Typed Model defines a type system for Node-API that mimics the TypeScript type system.
 
@@ -26,7 +26,7 @@ What does the TypeScript give to developers?
   if we try to assign a value to a variable of incompatible type.
 - Typescript does not add any additional runtime checks on its own. Instead, it does the most work
   at the compile time by adding semantic to normal JavaScript code. (The only exception are the enums
-  that are discoraged from being used in new code.)
+  that are discouraged from being used in new code.)
 
 We define the C# Node-API typed model to address the same concerns and use the following approach:
 - All types are structs that have a single `JSValue` field. They all are wrappers on top of
@@ -161,9 +161,9 @@ Each type alias is a C# partial struct with special custom attribute.
 
 ### TypeScript type assertions
 
-The type assertion help the code analyser decide on correct use of types.
+The type assertion help the code analyzer decide on correct use of types.
 They are going to be implemented as a set of helper functions and custom attributes of user functions.
-Code analyser will enforce these rules.
+Code analyzer will enforce these rules.
 
 ### TypeScript literal types
 
@@ -176,5 +176,5 @@ It is not clear yet how to represent object literals efficiently and if we want 
 
 ### TypeScript enums
 
-In modern TypeScript code developers are discourage from using them becuase they add significant
+In modern TypeScript code developers are discourage from using them because they add significant
 code to the runtime. Should we support them?
