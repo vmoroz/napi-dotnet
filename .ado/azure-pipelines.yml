@@ -1,0 +1,39 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- main
+
+pool:
+  vmImage: macos-latest
+
+steps:
+- task: UseDotNet@2
+  inputs:
+    packageType: 'sdk'
+    version: '7.0.x'
+
+- task: NodeTool@0
+  inputs:
+    versionSource: 'spec'
+    versionSpec: '18.x'
+
+- script: env
+  displayName: 'Print environment'
+
+- script: dotnet --info
+  displayName: '.Net info'
+
+- script: dotnet sdk check
+  displayName: '.Net SDK Check'
+
+- script: dotnet build --configuration Release
+  displayName: Build
+
+- script: dotnet pack --no-build --configuration Release
+  displayName: Pack
+
+- script: dotnet test --no-build --configuration Release --logger trx --results-directory "test-7.0.x-node18.x"
+  displayName: Test
