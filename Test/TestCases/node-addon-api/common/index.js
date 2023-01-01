@@ -110,7 +110,7 @@ async function whichBuildType() {
 exports.whichBuildType = whichBuildType;
 
 exports.runTest = async function (test) {
-  const binding = require(process.env['TEST_NODE_API_MODULE_PATH']);
+  const binding = require(process.env.TEST_DOTNET_MODULE_PATH);
   await Promise.resolve(test(binding))
     .finally(exports.mustCall());
 };

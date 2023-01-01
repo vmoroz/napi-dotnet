@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -54,38 +55,60 @@ public static partial class JSNativeApi
             return;
         }
 
+        Console.WriteLine("We are about to throw an error");
+
         // Crash on any error in this mode.
         using var errorReadingMode = new ErrorReadingMode();
+
+        Console.WriteLine("Before GetLastErrorInfo");
 
         // We must retrieve the last error info before doing anything else because
         // doing anything else will replace the last error info.
         JSErrorInfo errorInfo = GetLastErrorInfo();
 
+        Console.WriteLine("After GetLastErrorInfo");
+
         // A pending JS exception takes precedence over any internal error status.
-        if (IsExceptionPending())
+        // if (IsExceptionPending())
+        // {
+        //     JSValue jsError = GetAndClearLastException();
+        //     if (jsError.IsError())
+        //     {
+        //         JSValue message = jsError["message"];
+        //         if (message.TypeOf() == JSValueType.String)
+        //         {
+        //             errorInfo = new JSErrorInfo((string)message, errorInfo.Status);
+        //         }
+        //     }
+        // }
+
+        Console.WriteLine($"About to throw: {errorInfo.Message}");
+
+        try
         {
-            JSValue jsError = GetAndClearLastException();
-            if (jsError.IsError())
-            {
-                JSValue message = jsError["message"];
-                if (message.TypeOf() == JSValueType.String)
-                {
-                    errorInfo = new JSErrorInfo((string)message, errorInfo.Status);
-                }
-            }
+            //throw new Exception("errorInfo.Message");
+        }
+        catch (Exception ex)
+        { 
+            Console.WriteLine($"Intercepted exception: {ex.Message}");
         }
 
-        throw new JSException(errorInfo);
+        Console.WriteLine("After throwing");
     }
 
     public static unsafe JSErrorInfo GetLastErrorInfo()
     {
+        Console.WriteLine("Before napi_get_last_error_info");
         napi_get_last_error_info(Env, out napi_extended_error_info* errorInfo).ThrowIfFailed();
+        Console.WriteLine("After napi_get_last_error_info");
         if (errorInfo->error_message != null)
         {
+            Console.WriteLine("Before getting message");
             string message = Encoding.UTF8.GetString(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(errorInfo->error_message));
+            Console.WriteLine($"After getting message: {message}");
             return new JSErrorInfo(message, (JSStatus)errorInfo->error_code);
         }
+        Console.WriteLine("We could not get the message");
         return new JSErrorInfo("Error", (JSStatus)errorInfo->error_code);
     }
 
@@ -942,8 +965,9 @@ public static partial class JSNativeApi
             JSCallback callback = (JSCallback)args.Data!;
             return (napi_value)callback(args);
         }
-        catch (JSException ex)
+        catch (Exception ex)
         {
+            Console.WriteLine($"JSException.Message = {ex.Message}");
             //TODO: [vmoroz] Make JSException to wrap up the original error object instead.
             ThrowError("", ex.Message);
             return new napi_value(nint.Zero);

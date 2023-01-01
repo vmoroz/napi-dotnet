@@ -9,7 +9,7 @@ public class JSCallbackArgs
 
     public JSValue this[int index] => _args[index];
 
-    public int Length => _args.Length;
+    public int Count => _args.Length;
 
     public JSValue ThisArg { get; }
 

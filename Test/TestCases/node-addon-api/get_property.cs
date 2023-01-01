@@ -1,3 +1,4 @@
+using System;
 using NodeApi;
 
 namespace NodeApiTest;
@@ -6,6 +7,15 @@ public partial class TestObject
 {
     private static JSValue GetPropertyWithNapiValue(JSCallbackArgs args)
     {
+
+Console.WriteLine("Test: before exception");
+try {
+    throw new Exception("Hello a wonderful world!");
+} catch (Exception ex) {
+    Console.WriteLine($"Test: handle exception:{ex.Message}");
+}
+
+        Console.WriteLine($"GetPropertyWithNapiValue args.Count:{args.Count}");
         JSValue obj = args[0];
         JSValue key = args[1];
         return obj.GetProperty((JSNativeApi.Interop.napi_value)key);
