@@ -1,3 +1,5 @@
+// Definitions from Node.JS js_native_api.h and js_native_api_types.h
+
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
