@@ -240,8 +240,34 @@ public static partial class JSNativeApi
         internal static partial napi_status napi_create_array_with_length(napi_env env, nuint length, out napi_value result);
 
         // napi_status napi_create_double(napi_env env, double value, napi_value *result)
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static partial napi_status napi_create_double(napi_env env, double value, out napi_value result);
+        //[LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
+        //internal static partial napi_status napi_create_double(napi_env env, double value, out napi_value result);
+
+        [System.Runtime.CompilerServices.SkipLocalsInitAttribute]
+        internal static napi_status napi_create_double(napi_env env, double value, out napi_value result)
+        {
+            var cb = new napi_create_double_callback(NativeLibrary.GetMainProgramHandle());
+
+            System.Runtime.CompilerServices.Unsafe.SkipInit(out result);
+            global::NodeApi.JSNativeApi.Interop.napi_status __retVal;
+            // Pin - Pin data in preparation for calling the P/Invoke.
+            fixed (global::NodeApi.JSNativeApi.Interop.napi_value* __result_native = &result)
+            {
+                __retVal = cb.Handle(env, value, __result_native);
+            }
+
+            return __retVal;
+        }
+
+        public unsafe struct napi_create_double_callback
+        {
+            public delegate* unmanaged[Cdecl]<napi_env, double, napi_value*, napi_status> Handle;
+
+            public napi_create_double_callback(nint libraryHandle) {
+                nint functionHandle = NativeLibrary.GetExport(libraryHandle, "napi_create_double");
+                Handle = (delegate* unmanaged[Cdecl]<napi_env, double, napi_value*, napi_status>)functionHandle;
+            }
+        }
 
         // napi_status napi_create_int32(napi_env env, int32_t value, napi_value *result)
         [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
