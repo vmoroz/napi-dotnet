@@ -152,13 +152,13 @@ public static partial class JSNativeApi
                 Current,
                 MethodId.napi_async_init,
                 env,
-                async_resource,
-                async_resource_name,
+                async_resource.Handle,
+                async_resource_name.Handle,
                 out result);
 
         internal static napi_status napi_async_destroy(
             napi_env env, napi_async_context async_context)
-            => CallInterop(Current, MethodId.napi_async_destroy, env, async_context);
+            => CallInterop(Current, MethodId.napi_async_destroy, env, async_context.Handle);
 
         internal static napi_status napi_make_callback(
             napi_env env,
@@ -172,16 +172,16 @@ public static partial class JSNativeApi
                 Current,
                 MethodId.napi_make_callback,
                 env,
-                async_context,
-                recv,
-                func,
-                argc,
+                async_context.Handle,
+                recv.Handle,
+                func.Handle,
+                (nint)argc,
                 argv,
                 out result);
 
         internal static napi_status napi_create_buffer(
             napi_env env, nuint length, nint* data, napi_value* result)
-            => CallInterop(Current, MethodId.napi_create_buffer, env, length, data, result);
+            => CallInterop(Current, MethodId.napi_create_buffer, env, (nint)length, data, result);
 
         internal static napi_status napi_create_external_buffer(
             napi_env env,
@@ -194,9 +194,9 @@ public static partial class JSNativeApi
                 Current,
                 MethodId.napi_create_external_buffer,
                 env,
-                length,
+                (nint)length,
                 data,
-                finalize_cb,
+                (nint)finalize_cb.Handle,
                 finalize_hint,
                 out result);
 
@@ -220,11 +220,11 @@ public static partial class JSNativeApi
 
         internal static napi_status napi_is_buffer(
             napi_env env, napi_value value, out c_bool result)
-            => CallInterop(Current, MethodId.napi_is_buffer, env, value, out result);
+            => CallInterop(Current, MethodId.napi_is_buffer, env, value.Handle, out result);
 
         internal static napi_status napi_get_buffer_info(
             napi_env env, napi_value value, nint* data, nuint* length)
-            => CallInterop(Current, MethodId.napi_get_buffer_info, env, value, data, length);
+            => CallInterop(Current, MethodId.napi_get_buffer_info, env, value.Handle, data, length);
 
         internal static napi_status napi_create_async_work(
             napi_env env,
@@ -238,21 +238,21 @@ public static partial class JSNativeApi
                 Current,
                 MethodId.napi_create_async_work,
                 env,
-                async_resource,
-                async_resource_name,
-                execute,
-                complete,
+                async_resource.Handle,
+                async_resource_name.Handle,
+                (nint)execute.Handle,
+                (nint)complete.Handle,
                 data,
                 out result);
 
         internal static napi_status napi_delete_async_work(napi_env env, napi_async_work work)
-            => CallInterop(Current, MethodId.napi_delete_async_work, env, work);
+            => CallInterop(Current, MethodId.napi_delete_async_work, env, work.Handle);
 
         internal static napi_status napi_queue_async_work(napi_env env, napi_async_work work)
-            => CallInterop(Current, MethodId.napi_queue_async_work, env, work);
+            => CallInterop(Current, MethodId.napi_queue_async_work, env, work.Handle);
 
         internal static napi_status napi_cancel_async_work(napi_env env, napi_async_work work)
-            => CallInterop(Current, MethodId.napi_cancel_async_work, env, work);
+            => CallInterop(Current, MethodId.napi_cancel_async_work, env, work.Handle);
 
         internal static napi_status napi_get_node_version(napi_env env, out nint version)
             => CallInterop(Current, MethodId.napi_get_node_version, env, out version);
@@ -261,15 +261,15 @@ public static partial class JSNativeApi
             => CallInterop(Current, MethodId.napi_get_uv_event_loop, env, out loop);
 
         internal static napi_status napi_fatal_exception(napi_env env, napi_value err)
-            => CallInterop(Current, MethodId.napi_fatal_exception, env, err);
+            => CallInterop(Current, MethodId.napi_fatal_exception, env, err.Handle);
 
         internal static napi_status napi_add_env_cleanup_hook(
             napi_env env, napi_cleanup_hook fun, nint arg)
-            => CallInterop(Current, MethodId.napi_add_env_cleanup_hook, env, fun, arg);
+            => CallInterop(Current, MethodId.napi_add_env_cleanup_hook, env, (nint)fun.Handle, arg);
 
         internal static napi_status napi_remove_env_cleanup_hook(
             napi_env env, napi_cleanup_hook fun, nint arg)
-            => CallInterop(Current, MethodId.napi_remove_env_cleanup_hook, env, fun, arg);
+            => CallInterop(Current, MethodId.napi_remove_env_cleanup_hook, env, (nint)fun.Handle, arg);
 
         internal static napi_status napi_open_callback_scope(
             napi_env env,
@@ -280,13 +280,13 @@ public static partial class JSNativeApi
                 Current,
                 MethodId.napi_open_callback_scope,
                 env,
-                resource_object,
-                context,
+                resource_object.Handle,
+                context.Handle,
                 out result);
 
         internal static napi_status napi_close_callback_scope(
             napi_env env, napi_callback_scope scope)
-            => CallInterop(Current, MethodId.napi_close_callback_scope, env, scope);
+            => CallInterop(Current, MethodId.napi_close_callback_scope, env, scope.Handle);
 
         internal static napi_status napi_create_threadsafe_function(
             napi_env env,
@@ -389,11 +389,16 @@ public static partial class JSNativeApi
 
         internal static napi_status napi_unref_threadsafe_function(
             napi_env env, napi_threadsafe_function func)
-            => CallInterop(Current, MethodId.napi_unref_threadsafe_function, env, func);
+        {
+            nint funcHandle = Current!.GetExport(MethodId.napi_unref_threadsafe_function);
+            var funcDelegate = (delegate* unmanaged[Cdecl]<
+                napi_env, napi_threadsafe_function, napi_status>)funcHandle;
+            return funcDelegate(env, func);
+        }
 
         internal static napi_status napi_ref_threadsafe_function(
             napi_env env, napi_threadsafe_function func)
-            => CallInterop(Current, MethodId.napi_ref_threadsafe_function, env, func);
+            => CallInterop(Current, MethodId.napi_ref_threadsafe_function, env, func.Handle);
 
         internal static napi_status napi_add_async_cleanup_hook(
             napi_env env,
@@ -401,7 +406,7 @@ public static partial class JSNativeApi
             nint arg,
             out napi_async_cleanup_hook_handle remove_handle)
             => CallInterop(
-                Current, MethodId.napi_add_async_cleanup_hook, env, hook, arg, out remove_handle);
+                Current, MethodId.napi_add_async_cleanup_hook, env, (nint)hook.Handle, arg, out remove_handle);
 
         internal static napi_status napi_remove_async_cleanup_hook(
             napi_async_cleanup_hook_handle remove_handle)
