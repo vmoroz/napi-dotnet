@@ -1,18 +1,15 @@
 // Definitions from Node.JS node_api.h and node_api_types.h
 
+using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Security;
-using static Microsoft.JavaScript.NodeApi.JSNativeApi.Interop;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace Microsoft.JavaScript.NodeApi;
 
 public static partial class JSNativeApi
 {
     // Node-API Interop definitions and functions.
-    [SuppressUnmanagedCodeSecurity]
-    public static unsafe partial class NodeApiInterop
+    public unsafe partial class Interop
     {
         public record struct napi_callback_scope(nint Handle);
         public record struct napi_async_context(nint Handle);
@@ -105,109 +102,193 @@ public static partial class JSNativeApi
 
         public record struct uv_loop_t(nint Handle);
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial void napi_module_register(napi_module* mod);
+        internal static void napi_module_register(napi_module* mod)
+        {
+            nint funcHandle = Current!.GetExport(
+                MethodId.napi_module_register, nameof(napi_module_register));
+            var funcDelegate = (delegate* unmanaged[Cdecl]<napi_module*, void>)funcHandle;
+            funcDelegate(mod);
+        }
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
         [DoesNotReturn]
-        internal static unsafe partial void napi_fatal_error(
-            [MarshalAs(UnmanagedType.LPUTF8Str)] string location,
-            nuint location_len,
-            [MarshalAs(UnmanagedType.LPUTF8Str)] string message,
-            nuint message_len);
+        internal static void napi_fatal_error(string location, string message)
+        {
+            nint funcHandle = Current!.GetExport(
+               MethodId.napi_fatal_error, nameof(napi_module_register));
+            var funcDelegate = (delegate* unmanaged[Cdecl]<
+                byte*, nuint, byte*, nuint, void>)funcHandle;
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_async_init(
+            Utf8StringMarshaller.ManagedToUnmanagedIn location_marshaller = new();
+            Utf8StringMarshaller.ManagedToUnmanagedIn message_marshaller = new();
+            try
+            {
+                int bufferSize = Utf8StringMarshaller.ManagedToUnmanagedIn.BufferSize;
+
+                byte* location_stackptr = stackalloc byte[bufferSize];
+                location_marshaller.FromManaged(
+                    location, new Span<byte>(location_stackptr, bufferSize));
+                byte* location_native = location_marshaller.ToUnmanaged();
+
+                byte* message_stackptr = stackalloc byte[bufferSize];
+                message_marshaller.FromManaged(
+                    message, new Span<byte>(message_stackptr, bufferSize));
+                byte* message_native = message_marshaller.ToUnmanaged();
+
+                funcDelegate(location_native, NAPI_AUTO_LENGTH, message_native, NAPI_AUTO_LENGTH);
+            }
+            finally
+            {
+                location_marshaller.Free();
+                message_marshaller.Free();
+            }
+        }
+
+        internal static napi_status napi_async_init(
             napi_env env,
             napi_value async_resource,
             napi_value async_resource_name,
-            napi_async_context* result);
+            out napi_async_context result)
+            => CallInterop(
+                Current,
+                MethodId.napi_async_init,
+                env,
+                async_resource,
+                async_resource_name,
+                out result);
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_async_destroy(napi_env env, napi_async_context async_context);
+        internal static napi_status napi_async_destroy(
+            napi_env env, napi_async_context async_context)
+            => CallInterop(Current, MethodId.napi_async_destroy, env, async_context);
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_make_callback(
+        internal static napi_status napi_make_callback(
             napi_env env,
             napi_async_context async_context,
             napi_value recv,
             napi_value func,
             nuint argc,
-            napi_value* argv,
-            napi_value* result);
+            nint argv,
+            out napi_value result)
+            => CallInterop(
+                Current,
+                MethodId.napi_make_callback,
+                env,
+                async_context,
+                recv,
+                func,
+                argc,
+                argv,
+                out result);
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_create_buffer(napi_env env, nuint length, void** data, napi_value* result);
+        internal static napi_status napi_create_buffer(
+            napi_env env, nuint length, nint* data, napi_value* result)
+            => CallInterop(Current, MethodId.napi_create_buffer, env, length, data, result);
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_create_external_buffer(
+        internal static napi_status napi_create_external_buffer(
             napi_env env,
             nuint length,
-            void* data,
+            nint data,
             napi_finalize finalize_cb,
-            void* finalize_hint,
-            napi_value* result);
+            nint finalize_hint,
+            out napi_value result)
+            => CallInterop(
+                Current,
+                MethodId.napi_create_external_buffer,
+                env,
+                length,
+                data,
+                finalize_cb,
+                finalize_hint,
+                out result);
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_create_buffer_copy(
+        internal static napi_status napi_create_buffer_copy(
             napi_env env,
             nuint length,
-            void* data,
-            void** result_data,
-            napi_value* result);
+            nint data,
+            out nint result_data,
+            out napi_value result)
+        {
+            nint funcHandle = Current!.GetExport(
+                MethodId.napi_create_buffer_copy, nameof(napi_create_buffer_copy));
+            var funcDelegate = (delegate* unmanaged[Cdecl]<
+                 napi_env, nuint, nint, nint*, napi_value*, napi_status>)funcHandle;
+            fixed (nint* result_data_native = &result_data)
+            fixed (napi_value* result_native = &result)
+            {
+                return funcDelegate(env, length, data, result_data_native, result_native);
+            }
+        }
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_is_buffer(napi_env env, napi_value value, c_bool* result);
+        internal static napi_status napi_is_buffer(
+            napi_env env, napi_value value, out c_bool result)
+            => CallInterop(Current, MethodId.napi_is_buffer, env, value, out result);
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_get_buffer_info(napi_env env, napi_value value, void** data, nuint* length);
+        internal static napi_status napi_get_buffer_info(
+            napi_env env, napi_value value, nint* data, nuint* length)
+            => CallInterop(Current, MethodId.napi_get_buffer_info, env, value, data, length);
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_create_async_work(
+        internal static napi_status napi_create_async_work(
             napi_env env,
             napi_value async_resource,
             napi_value async_resource_name,
             napi_async_execute_callback execute,
             napi_async_complete_callback complete,
-            void* data,
-            napi_async_work* result);
+            nint data,
+            out napi_async_work result)
+            => CallInterop(
+                Current,
+                MethodId.napi_create_async_work,
+                env,
+                async_resource,
+                async_resource_name,
+                execute,
+                complete,
+                data,
+                out result);
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_delete_async_work(napi_env env, napi_async_work work);
+        internal static napi_status napi_delete_async_work(napi_env env, napi_async_work work)
+            => CallInterop(Current, MethodId.napi_delete_async_work, env, work);
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_queue_async_work(napi_env env, napi_async_work work);
+        internal static napi_status napi_queue_async_work(napi_env env, napi_async_work work)
+            => CallInterop(Current, MethodId.napi_queue_async_work, env, work);
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_cancel_async_work(napi_env env, napi_async_work work);
+        internal static napi_status napi_cancel_async_work(napi_env env, napi_async_work work)
+            => CallInterop(Current, MethodId.napi_cancel_async_work, env, work);
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_get_node_version(napi_env env, napi_node_version** version);
+        internal static napi_status napi_get_node_version(napi_env env, out nint version)
+            => CallInterop(Current, MethodId.napi_get_node_version, env, out version);
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_get_uv_event_loop(napi_env env, uv_loop_t* loop);
+        internal static napi_status napi_get_uv_event_loop(napi_env env, out uv_loop_t loop)
+            => CallInterop(Current, MethodId.napi_get_uv_event_loop, env, out loop);
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_fatal_exception(napi_env env, napi_value err);
+        internal static napi_status napi_fatal_exception(napi_env env, napi_value err)
+            => CallInterop(Current, MethodId.napi_fatal_exception, env, err);
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_add_env_cleanup_hook(napi_env env, napi_cleanup_hook fun, nint arg);
+        internal static napi_status napi_add_env_cleanup_hook(
+            napi_env env, napi_cleanup_hook fun, nint arg)
+            => CallInterop(Current, MethodId.napi_add_env_cleanup_hook, env, fun, arg);
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_remove_env_cleanup_hook(napi_env env, napi_cleanup_hook fun, nint arg);
+        internal static napi_status napi_remove_env_cleanup_hook(
+            napi_env env, napi_cleanup_hook fun, nint arg)
+            => CallInterop(Current, MethodId.napi_remove_env_cleanup_hook, env, fun, arg);
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_open_callback_scope(
+        internal static napi_status napi_open_callback_scope(
             napi_env env,
             napi_value resource_object,
             napi_async_context context,
-            napi_callback_scope* result);
+            out napi_callback_scope result)
+            => CallInterop(
+                Current,
+                MethodId.napi_open_callback_scope,
+                env,
+                resource_object,
+                context,
+                out result);
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_close_callback_scope(napi_env env, napi_callback_scope scope);
+        internal static napi_status napi_close_callback_scope(
+            napi_env env, napi_callback_scope scope)
+            => CallInterop(Current, MethodId.napi_close_callback_scope, env, scope);
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_create_threadsafe_function(
+        internal static napi_status napi_create_threadsafe_function(
             napi_env env,
             napi_value func,
             napi_value async_resource,
@@ -218,45 +299,130 @@ public static partial class JSNativeApi
             napi_finalize thread_finalize_cb,
             nint context,
             napi_threadsafe_function_call_js call_js_cb,
-            out napi_threadsafe_function result);
+            out napi_threadsafe_function result)
+        {
+            nint funcHandle = Current!.GetExport(
+                MethodId.napi_create_threadsafe_function, nameof(napi_create_threadsafe_function));
+            var funcDelegate = (delegate* unmanaged[Cdecl]<
+                napi_env,
+                napi_value,
+                napi_value,
+                napi_value,
+                nuint,
+                nuint,
+                nint,
+                napi_finalize,
+                nint,
+                napi_threadsafe_function_call_js,
+                napi_threadsafe_function*,
+                napi_status >)funcHandle;
+            fixed (napi_threadsafe_function* result_native = &result)
+            {
+                return funcDelegate(env,
+                    func,
+                    async_resource,
+                    async_resource_name,
+                    max_queue_size,
+                    initial_thread_count,
+                    thread_finalize_data,
+                    thread_finalize_cb,
+                    context,
+                    call_js_cb,
+                    result_native);
+            }
+        }
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_get_threadsafe_function_context(
-            napi_threadsafe_function func,
-            out nint result);
+        internal static napi_status napi_get_threadsafe_function_context(
+            napi_threadsafe_function func, out nint result)
+        {
+            nint funcHandle = Current!.GetExport(
+                MethodId.napi_get_threadsafe_function_context,
+                nameof(napi_get_threadsafe_function_context));
+            var funcDelegate = (delegate* unmanaged[Cdecl]<
+                napi_threadsafe_function,
+                nint*,
+                napi_status>)funcHandle;
+            fixed (nint* result_native = &result)
+            {
+                return funcDelegate(func, result_native);
+            }
+        }
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_call_threadsafe_function(
+        internal static napi_status napi_call_threadsafe_function(
             napi_threadsafe_function func,
             nint data,
-            napi_threadsafe_function_call_mode is_blocking);
+            napi_threadsafe_function_call_mode is_blocking)
+        {
+            nint funcHandle = Current!.GetExport(
+                MethodId.napi_call_threadsafe_function, nameof(napi_call_threadsafe_function));
+            var funcDelegate = (delegate* unmanaged[Cdecl]<
+                napi_threadsafe_function,
+                nint,
+                napi_threadsafe_function_call_mode,
+                napi_status>)funcHandle;
+            return funcDelegate(func, data, is_blocking);
+        }
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_acquire_threadsafe_function(napi_threadsafe_function func);
+        internal static napi_status napi_acquire_threadsafe_function(napi_threadsafe_function func)
+        {
+            nint funcHandle = Current!.GetExport(
+                MethodId.napi_acquire_threadsafe_function,
+                nameof(napi_acquire_threadsafe_function));
+            var funcDelegate = (delegate* unmanaged[Cdecl]<
+                napi_threadsafe_function, napi_status>)funcHandle;
+            return funcDelegate(func);
+        }
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_release_threadsafe_function(
+        internal static napi_status napi_release_threadsafe_function(
             napi_threadsafe_function func,
-            napi_threadsafe_function_release_mode mode);
+            napi_threadsafe_function_release_mode mode)
+        {
+            nint funcHandle = Current!.GetExport(
+                MethodId.napi_release_threadsafe_function,
+                nameof(napi_release_threadsafe_function));
+            var funcDelegate = (delegate* unmanaged[Cdecl]<
+                napi_threadsafe_function,
+                napi_threadsafe_function_release_mode,
+                napi_status>)funcHandle;
+            return funcDelegate(func, mode);
+        }
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status
-        napi_unref_threadsafe_function(napi_env env, napi_threadsafe_function func);
+        internal static napi_status napi_unref_threadsafe_function(
+            napi_env env, napi_threadsafe_function func)
+            => CallInterop(Current, MethodId.napi_unref_threadsafe_function, env, func);
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_ref_threadsafe_function(napi_env env, napi_threadsafe_function func);
+        internal static napi_status napi_ref_threadsafe_function(
+            napi_env env, napi_threadsafe_function func)
+            => CallInterop(Current, MethodId.napi_ref_threadsafe_function, env, func);
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_add_async_cleanup_hook(
+        internal static napi_status napi_add_async_cleanup_hook(
             napi_env env,
             napi_async_cleanup_hook hook,
-            void* arg,
-            napi_async_cleanup_hook_handle* remove_handle);
+            nint arg,
+            out napi_async_cleanup_hook_handle remove_handle)
+            => CallInterop(
+                Current, MethodId.napi_add_async_cleanup_hook, env, hook, arg, out remove_handle);
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status napi_remove_async_cleanup_hook(napi_async_cleanup_hook_handle remove_handle);
+        internal static napi_status napi_remove_async_cleanup_hook(
+            napi_async_cleanup_hook_handle remove_handle)
+        {
+            nint funcHandle = Current!.GetExport(
+                MethodId.napi_remove_async_cleanup_hook,
+                nameof(napi_remove_async_cleanup_hook));
+            var funcDelegate = (delegate* unmanaged[Cdecl]<
+                napi_async_cleanup_hook_handle,
+                napi_status>)funcHandle;
+            return funcDelegate(remove_handle);
+        }
 
-        [LibraryImport(nameof(NodeApi)), UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
-        internal static unsafe partial napi_status node_api_get_module_file_name(napi_env env, byte** result);
+        internal static napi_status node_api_get_module_file_name(napi_env env, byte** result)
+        {
+            nint funcHandle = Current!.GetExport(
+                MethodId.node_api_get_module_file_name,
+                nameof(node_api_get_module_file_name));
+            var funcDelegate = (delegate* unmanaged[Cdecl]<
+                napi_env, byte**, napi_status>)funcHandle;
+            return funcDelegate(env, result);
+        }
     }
 }

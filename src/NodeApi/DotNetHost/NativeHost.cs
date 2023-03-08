@@ -40,10 +40,11 @@ internal partial class NativeHost : IDisposable
     {
         Trace($"> NativeHost.InitializeModule({env.Handle:X8}, {exports.Handle:X8})");
 
-        using JSValueScope scope = new(
-            JSValueScopeType.RootNoContext, env, NativeLibrary.GetMainProgramHandle());
+        using JSValueScope scope = new(JSValueScopeType.RootNoContext, env);
         try
         {
+            JSNativeApi.Interop.Initialize(NativeLibrary.GetMainProgramHandle());
+
             NativeHost host = new();
 
             // Do not use JSModuleBuilder here because it relies on having a current context.
