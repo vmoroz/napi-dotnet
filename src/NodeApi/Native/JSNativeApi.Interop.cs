@@ -1,7 +1,6 @@
 // Definitions from Node.JS js_native_api.h and js_native_api_types.h
 
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -1067,8 +1066,13 @@ public static partial class JSNativeApi
 
         internal static napi_status napi_set_instance_data(
             napi_env env, nint data, napi_finalize finalize_cb, nint finalize_hint)
-            => CallInterop(
-                Current, MethodId.napi_set_instance_data, env, data, finalize_cb, finalize_hint);
+        {
+            nint funcHandle = Current!.GetExport(
+                MethodId.napi_set_instance_data, nameof(napi_set_instance_data));
+            var funcDelegate = (delegate* unmanaged[Cdecl]<
+                napi_env, nint, napi_finalize, nint, napi_status>)funcHandle;
+            return funcDelegate(env, data, finalize_cb, finalize_hint);
+        }
 
         internal static napi_status napi_get_instance_data(napi_env env, out nint data)
             => CallInterop(Current, MethodId.napi_get_instance_data, env, out data);
@@ -1136,10 +1140,10 @@ public static partial class JSNativeApi
             ArgumentNullException.ThrowIfNull(interop);
             nint funcHandle = interop.GetExport(methodId, functionName);
             var funcDelegate = (delegate* unmanaged[Cdecl]<
-                napi_env, TResult*, napi_status>)funcHandle;
+                napi_env, nint, napi_status>)funcHandle;
             fixed (TResult* result_native = &result)
             {
-                return funcDelegate(env, result_native);
+                return funcDelegate(env, (nint)result_native);
             }
         }
 
