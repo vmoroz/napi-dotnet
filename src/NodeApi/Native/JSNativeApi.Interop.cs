@@ -960,7 +960,7 @@ public static partial class JSNativeApi
             => CallInterop(
                 Current, FunctionId.napi_get_reference_value, env, @ref.Handle, out result);
 
-        static internal napi_status napi_open_handle_scope(
+        internal static napi_status napi_open_handle_scope(
             napi_env env, out napi_handle_scope result)
             => CallInterop(Current, FunctionId.napi_open_handle_scope, env, out result);
 

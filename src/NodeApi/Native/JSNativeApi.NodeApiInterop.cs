@@ -341,7 +341,7 @@ public static partial class JSNativeApi
                 nint,
                 napi_threadsafe_function_call_js,
                 napi_threadsafe_function*,
-                napi_status >)funcHandle;
+                napi_status>)funcHandle;
             fixed (napi_threadsafe_function* result_native = &result)
             {
                 return funcDelegate(env,
