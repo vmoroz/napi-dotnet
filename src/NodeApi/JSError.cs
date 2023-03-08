@@ -17,7 +17,8 @@ file record struct JSErrorInfo(string? Message, napi_status Status)
     {
         napi_get_last_error_info(
             (napi_env)JSValueScope.Current,
-            out napi_extended_error_info* errorInfo).ThrowIfFailed();
+            out nint errorInfoHandle).ThrowIfFailed();
+        var errorInfo = (napi_extended_error_info*)errorInfoHandle;
         if (errorInfo == null)
         {
             return new JSErrorInfo(null, napi_status.napi_ok);

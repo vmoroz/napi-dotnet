@@ -20,12 +20,17 @@ public sealed class JSValueScope : IDisposable
 
     public static JSValueScope? Current => s_currentScope;
 
+    public static JSValueScope CurrentRequired
+        => s_currentScope ?? throw new InvalidOperationException("Scope is null");
+
     public bool IsDisposed { get; private set; }
 
     public JSContext ModuleContext { get; }
 
     public JSValueScope(
-        JSValueScopeType scopeType = JSValueScopeType.Handle, napi_env env = default)
+        JSValueScopeType scopeType = JSValueScopeType.Handle,
+        napi_env env = default,
+        nint interopModule = 0)
     {
         ScopeType = scopeType;
 

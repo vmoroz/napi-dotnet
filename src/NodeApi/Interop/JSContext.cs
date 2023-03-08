@@ -88,7 +88,8 @@ public sealed class JSContext : IDisposable
 
     public JSContext(napi_env env)
     {
-        JSNativeApi.Interop.Initialize();
+        //TODO: [vmoroz] Fix
+        //JSNativeApi.Interop.Initialize();
         _env = env;
         SetInstanceData(env, this);
         SynchronizationContext = new JSSynchronizationContext();
