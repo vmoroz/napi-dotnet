@@ -101,7 +101,7 @@ public readonly struct JSValue : IEquatable<JSValue>
         fixed (byte* spanPtr = value)
         {
             return napi_create_string_latin1(
-                Env, (nint)spanPtr, (nuint)value.Length, out napi_value result)
+                Env, spanPtr, (nuint)value.Length, out napi_value result)
                 .ThrowIfFailed(result);
         }
     }
@@ -111,7 +111,7 @@ public readonly struct JSValue : IEquatable<JSValue>
         fixed (byte* spanPtr = value)
         {
             return napi_create_string_utf8(
-                Env, (nint)spanPtr, (nuint)value.Length, out napi_value result)
+                Env, spanPtr, (nuint)value.Length, out napi_value result)
                 .ThrowIfFailed(result);
         }
     }
@@ -121,7 +121,7 @@ public readonly struct JSValue : IEquatable<JSValue>
         fixed (char* spanPtr = value)
         {
             return napi_create_string_utf16(
-                Env, (nint)spanPtr, (nuint)value.Length, out napi_value result)
+                Env, spanPtr, (nuint)value.Length, out napi_value result)
                 .ThrowIfFailed(result);
         }
     }
@@ -134,8 +134,7 @@ public readonly struct JSValue : IEquatable<JSValue>
     {
         fixed (byte* name = utf8Name)
         {
-            return node_api_symbol_for(
-                Env, (nint)name, (nuint)utf8Name.Length, out napi_value result)
+            return node_api_symbol_for(Env, name, (nuint)utf8Name.Length, out napi_value result)
                 .ThrowIfFailed(result);
         }
     }
@@ -148,12 +147,8 @@ public readonly struct JSValue : IEquatable<JSValue>
         fixed (byte* namePtr = utf8Name)
         {
             return napi_create_function(
-                Env,
-                (nint)namePtr,
-                (nuint)utf8Name.Length,
-                callback,
-                data,
-                out napi_value result).ThrowIfFailed(result);
+                Env, namePtr, (nuint)utf8Name.Length, callback, data, out napi_value result)
+                .ThrowIfFailed(result);
         }
     }
 
@@ -277,7 +272,7 @@ public readonly struct JSValue : IEquatable<JSValue>
         fixed (ulong* wordPtr = words)
         {
             return napi_create_bigint_words(
-                Env, signBit, (nuint)words.Length, (nint)wordPtr, out napi_value result)
+                Env, signBit, (nuint)words.Length, wordPtr, out napi_value result)
                 .ThrowIfFailed(result);
         }
     }

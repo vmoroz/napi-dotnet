@@ -470,19 +470,34 @@ public static partial class JSNativeApi
         }
 
         internal static napi_status napi_create_string_latin1(
-            napi_env env, nint str, nuint length, out napi_value result)
+            napi_env env, byte* str, nuint length, out napi_value result)
             => CallInterop(
-                Current, FunctionId.napi_create_string_latin1, env, str, (nint)length, out result);
+                Current,
+                FunctionId.napi_create_string_latin1,
+                env,
+                (nint)str,
+                (nint)length,
+                out result);
 
         internal static napi_status napi_create_string_utf8(
-            napi_env env, nint str, nuint length, out napi_value result)
+            napi_env env, byte* str, nuint length, out napi_value result)
             => CallInterop(
-                Current, FunctionId.napi_create_string_utf8, env, str, (nint)length, out result);
+                Current,
+                FunctionId.napi_create_string_utf8,
+                env,
+                (nint)str,
+                (nint)length,
+                out result);
 
         internal static napi_status napi_create_string_utf16(
-            napi_env env, nint str, nuint length, out napi_value result)
+            napi_env env, char* str, nuint length, out napi_value result)
             => CallInterop(
-                Current, FunctionId.napi_create_string_utf16, env, str, (nint)length, out result);
+                Current,
+                FunctionId.napi_create_string_utf16,
+                env,
+                (nint)str,
+                (nint)length,
+                out result);
 
         internal static napi_status napi_create_symbol(
             napi_env env, napi_value description, out napi_value result)
@@ -490,13 +505,18 @@ public static partial class JSNativeApi
                 Current, FunctionId.napi_create_symbol, env, description.Handle, out result);
 
         internal static napi_status node_api_symbol_for(
-            napi_env env, nint utf8name, nuint length, out napi_value result)
+            napi_env env, byte* utf8name, nuint length, out napi_value result)
             => CallInterop(
-                Current, FunctionId.node_api_symbol_for, env, utf8name, (nint)length, out result);
+                Current,
+                FunctionId.node_api_symbol_for,
+                env,
+                (nint)utf8name,
+                (nint)length,
+                out result);
 
         internal static napi_status napi_create_function(
             napi_env env,
-            nint utf8name,
+            byte* utf8name,
             nuint length,
             napi_callback cb,
             nint data,
@@ -505,7 +525,7 @@ public static partial class JSNativeApi
                 Current,
                 FunctionId.napi_create_function,
                 env,
-                utf8name,
+                (nint)utf8name,
                 (nint)length,
                 (nint)cb.Handle,
                 data,
@@ -1225,14 +1245,14 @@ public static partial class JSNativeApi
         }
 
         internal static napi_status napi_create_bigint_words(
-            napi_env env, int sign_bit, nuint word_count, nint words, out napi_value result)
+            napi_env env, int sign_bit, nuint word_count, ulong* words, out napi_value result)
         {
             nint funcHandle = Current!.GetExport(FunctionId.napi_create_bigint_uint64);
             var funcDelegate = (delegate* unmanaged[Cdecl]<
                 napi_env, int, nuint, nint, nint, napi_status>)funcHandle;
             fixed (napi_value* result_native = &result)
             {
-                return funcDelegate(env, sign_bit, word_count, words, (nint)result_native);
+                return funcDelegate(env, sign_bit, word_count, (nint)words, (nint)result_native);
             }
         }
 
